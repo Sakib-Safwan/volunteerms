@@ -1,133 +1,207 @@
-/* Basic Reset & App-wide styles */
+/* --- CSS VARIABLES (Our Theme) --- */
+:root {
+  --primary-color: #007bff;
+  --primary-color-dark: #0056b3;
+  --secondary-color: #6c757d;
+  --background-color: #f8f9fa;
+  --surface-color: #ffffff;
+  --text-color: #212529;
+  --text-color-light: #495057;
+  --border-color: #dee2e6;
+  --error-color: #dc3545;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --border-radius: 8px;
+}
+
+/* --- Global Reset & App-wide Styles --- */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f4f7f6;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
 }
 
 .container {
   max-width: 1100px;
-  margin: 20px auto;
+  margin: 0 auto;
   padding: 0 20px;
 }
 
-/* Navbar */
+/* --- Modern Navbar --- */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
+  background-color: var(--surface-color);
+  box-shadow: var(--shadow);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .nav-brand {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: bold;
-  color: #333;
+  color: var(--primary-color);
   text-decoration: none;
 }
 
 .nav-links {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .nav-link {
   text-decoration: none;
-  color: #555;
+  color: var(--text-color-light);
   font-weight: 500;
-  padding: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
 }
 
 .nav-link:hover {
-  color: #007bff;
+  color: var(--primary-color);
+  background-color: #f1f3f5;
 }
 
-/* Forms */
+/* --- Modern Form Container (The "Cool Component") --- */
 .form-container {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 2rem;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  max-width: 420px;
+  margin: 60px auto;
+  padding: 2.5rem;
+  background: var(--surface-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.3s ease;
+}
+
+.form-container:hover {
+  box-shadow: var(--shadow-hover);
 }
 
 .form-container h2 {
   text-align: center;
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  color: var(--text-color);
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--text-color-light);
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 0.75rem;
-  box-sizing: border-box; /* Important for padding to work right */
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 0.85rem;
+  box-sizing: border-box; /* Fixes padding issues */
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Add a focus state */
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
 .error-message {
-  color: #d93025;
+  color: var(--error-color);
   font-size: 0.9rem;
-  margin-top: 10px;
+  margin-top: 1rem;
   text-align: center;
 }
 
-/* Buttons */
+/* --- Modern Buttons --- */
 .btn {
   display: inline-block;
-  padding: 0.75rem 1.5rem;
+  width: 100%; /* Make buttons fill their container */
+  padding: 0.9rem 1.5rem;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: background-color 0.2s;
+  border: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .btn-primary {
-  background-color: #007bff;
+  background-color: var(--primary-color);
   color: white;
-  border-color: #007bff;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: var(--primary-color-dark);
+  transform: translateY(-2px); /* Subtle lift effect */
+  box-shadow: var(--shadow);
 }
 
-/* Page-specific Layouts */
-.page-center {
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+.btn-outline:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* --- Landing Page Specific --- */
+.hero-section {
   text-align: center;
-  margin-top: 60px;
+  margin-top: 80px;
+  padding: 2rem;
 }
 
-.page-center h1 {
-  font-size: 2.5rem;
+.hero-section h1 {
+  font-size: 3.5rem;
   margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.hero-section p {
+  font-size: 1.25rem;
+  color: var(--text-color-light);
+  margin-bottom: 2.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .cta-buttons {
   margin-top: 2rem;
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.5rem;
+}
+
+/* Make CTA buttons non-full-width */
+.cta-buttons .btn {
+  width: auto;
+  min-width: 180px;
 }

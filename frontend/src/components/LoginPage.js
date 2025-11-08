@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,20 +13,15 @@ function LoginPage() {
     setError('');
 
     try {
-      // API call to the Go backend
       const response = await axios.post('http://localhost:8080/login', {
         email: email,
         password: password,
       });
 
-      // Store the token (e.g., in localStorage)
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('role', response.data.role);
-
-      console.log('Login successful');
       
-      // Redirect to a dashboard (which you'll build next)
-      // For now, just redirect to the homepage
+      // We'll redirect to a dashboard later
       navigate('/'); 
 
     } catch (err) {
@@ -40,29 +35,41 @@ function LoginPage() {
 
   return (
     <div className="form-container">
-      <h2>Login</h2>
       <form onSubmit={handleSubmit}>
+        <h2>Welcome Back!</h2>
+        
         <div className="form-group">
-          <label>Email:</label>
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
+        
         <div className="form-group">
-          <label>Password:</label>
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
+        
         {error && <p className="error-message">{error}</p>}
-        <button type="submit" className="btn btn-primary">Login</button>
+        
+        <button type="submit" className="btn btn-primary">
+          Login
+        </button>
       </form>
+      
+      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-color-light)' }}>
+        Don't have an account? <Link to="/register" style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: '600' }}>Register</Link>
+      </p>
     </div>
   );
 }

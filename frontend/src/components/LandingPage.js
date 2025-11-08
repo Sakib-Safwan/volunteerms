@@ -3,14 +3,26 @@ import { Link } from 'react-router-dom';
 
 function LandingPage() {
   return (
-    <div className="page-center">
-      <h1>Welcome to the Volunteer Management System</h1>
-      [cite_start]<p>Connecting organizers and volunteers seamlessly. [cite: 9, 12]</p>
-      [cite_start]{/* This will later be your public event feed [cite: 25] */}
-      <div className="cta-buttons">
-        <Link to="/register" className="btn btn-primary">Get Started</Link>
-        <Link to="/login" className="btn">Login</Link>
+    <div className="container">
+      <div className="hero-section">
+        <h1>Welcome to the Volunteer Management System</h1>
+        <p>
+          Connecting organizers and volunteers seamlessly. Find opportunities,
+          manage events, and make a difference.
+        </p>
+        <div className="cta-buttons">
+          <Link to="/register" className="btn btn-primary">
+            Get Started
+          </Link>
+          <Link to="/login" className="btn btn-outline">
+            Login
+          </Link>
+        </div>
       </div>
+
+      {/* This is where your public event feed will go.
+        It will look great inside a card layout.
+      */}
     </div>
   );
 }

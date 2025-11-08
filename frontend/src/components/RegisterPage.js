@@ -1,30 +1,25 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Volunteer'); // Default role
+  const [role, setRole] = useState('Volunteer');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Clear previous errors
+    setError('');
 
     try {
-      // API call to the Go backend
-      const response = await axios.post('http://localhost:8080/register', {
+      await axios.post('http://localhost:8080/register', {
         email: email,
         password: password,
         role: role,
       });
-
-      console.log(response.data.message);
-      // Redirect to login page on successful registration
       navigate('/login');
-
     } catch (err) {
       if (err.response) {
         setError(err.response.data.error);
@@ -36,37 +31,49 @@ function RegisterPage() {
 
   return (
     <div className="form-container">
-      <h2>Register</h2>
       <form onSubmit={handleSubmit}>
+        <h2>Create Your Account</h2>
+        
         <div className="form-group">
-          <label>Email:</label>
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
+        
         <div className="form-group">
-          <label>Password:</label>
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
-        [cite_start]{/* Role selection as per SRS [cite: 23] */}
+        
         <div className="form-group">
-          <label>I am a:</label>
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <label htmlFor="role">I am a:</label>
+          <select id="role" value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="Volunteer">Volunteer</option>
             <option value="Organizer">Organizer</option>
           </select>
         </div>
+        
         {error && <p className="error-message">{error}</p>}
-        <button type="submit" className="btn btn-primary">Register</button>
+        
+        <button type="submit" className="btn btn-primary">
+          Register
+        </button>
       </form>
+      
+      <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-color-light)' }}>
+        Already have an account? <Link to="/login" style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: '600' }}>Login</Link>
+      </p>
     </div>
   );
 }
