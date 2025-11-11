@@ -13,7 +13,6 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
     timeZone: 'UTC'
   });
 
-  // REVERTED: Create Google Maps link from address string
   const mapLink = event.locationAddress 
     ? `https://www.google.com/maps?q=${encodeURIComponent(event.locationAddress)}`
     : null;
@@ -57,8 +56,12 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
         <div className="event-card-header">
           <div className="event-avatar"><span>📅</span></div>
           <div className="event-header-info">
-            <span className="event-organizer">{event.createdBy ? `by ${event.createdBy.split('@')[0]}` : 'Organizer'}</span>
-            {/* Typo 'spanZ' fixed to 'span' */}
+            {/* FIXED: Changed event.createdBy to event.createdByEmail
+              We also check if createdByEmail exists before trying to split it.
+            */}
+            <span className="event-organizer">
+              {event.createdByEmail ? `by ${event.createdByEmail.split('@')[0]}` : 'Organizer'}
+            </span>
             <span className="event-date"> • {formattedDate}</span>
           </div>
         </div>
@@ -66,7 +69,6 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
         <div className="event-card-body">
           <h3 className="event-card-title">{event.name}</h3>
           
-          {/* UPDATED: Show location address if it exists */}
           {event.locationAddress && (
             <p className="event-card-location">
               📍 {event.locationAddress}
@@ -88,11 +90,10 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
           </button>
         )}
         
-        {/* REVERTED: Map Link (works with address) */}
         {mapLink && (
           <a
             href={mapLink}
-            target="_blank" // Open in new tab
+            target="_blank"
             rel="noopener noreferrer"
             className="btn-map-link"
             onClick={handleMapClick}
