@@ -16,7 +16,11 @@ function CreateEventPage() {
     try {
       await axios.post(
         'http://localhost:8080/events',
-        { name: eventName, date: eventDate, description: eventDescription },
+        { 
+          name: eventName, 
+          date: eventDate, 
+          description: eventDescription 
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       navigate('/events');
@@ -42,7 +46,7 @@ function CreateEventPage() {
             <label htmlFor="eventName">Event Name</label>
             <input
               id="eventName" type="text" value={eventName}
-              onChange={(e) => setEventName(e.Ttarget.value)} required
+              onChange={(e) => setEventName(e.target.value)} required
             />
           </div>
           

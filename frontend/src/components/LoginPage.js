@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
-// NEW: Pass in props to update the app's state
-function LoginPage({ setIsLoggedIn, setUserRole }) {
+// We REMOVED the { setIsLoggedIn, setUserRole } props
+function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,21 +19,22 @@ function LoginPage({ setIsLoggedIn, setUserRole }) {
         password: password,
       });
 
-      // Store token and role
+      // Store token and role (This part is correct)
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('role', response.data.role);
       
-      // NEW: Update the parent app state
-      setIsLoggedIn(true);
-      setUserRole(response.data.role);
+      // -- DELETE THE TWO LINES BELOW --
+      // setIsLoggedIn(true); // <-- DELETE THIS
+      // setUserRole(response.data.role); // <-- DELETE THIS
 
-      // Redirect to the main event feed
+      // Now the navigate() command will be reached
       navigate('/events'); 
 
     } catch (err) {
       if (err.response) {
         setError(err.response.data.error);
       } else {
+        // This is the error you were seeing before
         setError('Login failed. Please try again.');
       }
     }
