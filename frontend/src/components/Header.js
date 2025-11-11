@@ -40,38 +40,43 @@ function Header() {
         </div>
 
         <div className="header-center">
+          {/* Replaced icons with text */}
           <NavLink to="/home" className="header-nav-pill">
-            <span className="nav-icon" role="img" aria-label="Home">🏠</span>
+            Home
           </NavLink>
           <NavLink to="/events" className="header-nav-pill">
-            <span className="nav-icon" role="img" aria-label="Events">📅</span>
+            Events
           </NavLink>
           <NavLink to="/network" className="header-nav-pill">
-            <span className="nav-icon" role="img" aria-label="Network">👥</span>
+            Network
           </NavLink>
           <NavLink to="/groups" className="header-nav-pill">
-            <span className="nav-icon" role="img" aria-label="Groups">🏘️</span>
+            Groups
           </NavLink>
           {userRole === 'Organizer' && (
             <NavLink to="/create-event" className="header-nav-pill">
-              <span className="nav-icon" role="img" aria-label="Create Event">✨</span>
+              Create Event
             </NavLink>
           )}
         </div>
 
         <div className="header-right">
-          <NavLink to="/notifications" className="header-nav-pill-icon">
-            <span className="nav-icon" role="img" aria-label="Notifications">🔔</span>
+          {/* Replaced icons with text/avatar */}
+          <NavLink to="/notifications" className="header-nav-link-right">
+            Notifications
           </NavLink>
-          <NavLink to="/profile" className="header-nav-pill-icon">
+          <NavLink to="/profile" className="header-nav-link-right profile-link">
             {user ? (
-              <img 
-                src={user.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${user.name[0]}`}
-                alt="Profile"
-                className="header-profile-avatar"
-              />
+              <>
+                <img 
+                  src={user.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${user.name[0]}`}
+                  alt="Profile"
+                  className="header-profile-avatar"
+                />
+                <span>{user.name.split(' ')[0]}</span>
+              </>
             ) : (
-              <span className="nav-icon" role="img" aria-label="Profile">👤</span>
+              <span>Profile</span>
             )}
           </NavLink>
           <button onClick={handleLogout} className="btn-logout-header">

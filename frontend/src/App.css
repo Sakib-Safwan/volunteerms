@@ -27,7 +27,7 @@ body {
   line-height: 1.5;
 }
 
-/* --- NEW: Header Bar --- */
+/* --- UPDATED: Header Bar --- */
 .header-container {
   position: sticky;
   top: 0;
@@ -56,13 +56,14 @@ body {
   display: flex;
   justify-content: center;
   height: 100%;
+  gap: 8px; /* Add gap between items */
 }
 .header-right {
   flex: 1;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+  gap: 16px; /* Increase gap */
 }
 .header-brand-logo {
   font-size: 1.75rem;
@@ -79,40 +80,49 @@ body {
   height: 100%;
   padding: 0 16px;
   min-width: 56px;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
   border-bottom: 2px solid transparent;
+  font-size: 15px; /* Set font size for text */
+  font-weight: 600; /* Make text bold */
 }
 .header-nav-pill:hover {
   background-color: #e7e7e8;
+  color: var(--text-color);
 }
 .header-nav-pill.active {
   color: var(--text-color);
   font-weight: 700;
   border-bottom-color: var(--primary-color);
 }
+/* Remove nav-icon styles as they are no longer needed */
 .header-nav-pill .nav-icon {
-  font-size: 24px;
-  margin: 0;
+  display: none; 
 }
 
-/* Right-side icons */
-.header-nav-pill-icon {
+/* UPDATED: Right-side links */
+.header-nav-link-right {
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   color: var(--text-color);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  padding: 8px 12px;
+  border-radius: 9999px;
   transition: background-color 0.2s;
+  font-size: 15px;
+  font-weight: 600;
 }
-.header-nav-pill-icon:hover {
+.header-nav-link-right:hover {
   background-color: #e7e7e8;
 }
+.header-nav-link-right.profile-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .header-profile-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px; /* Slightly smaller avatar */
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -132,12 +142,11 @@ body {
 }
 
 
-/* --- NEW: 2-Column Layout --- */
+/* --- 2-Column Layout --- */
 .app-layout-2-col {
   display: grid;
-  /* Main feed and sidebar */
   grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
-  max-width: 990px; /* Centered content area */
+  max-width: 990px;
   margin: 0 auto;
   gap: 30px;
   padding: 0 16px;
@@ -146,15 +155,14 @@ body {
   border-left: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   min-height: 100vh;
-  /* remove min-width from 3-col layout */
 }
 .right-sidebar {
-  padding: 0; /* Remove padding */
+  padding: 0;
 }
 .sidebar-sticky-content {
   position: sticky;
-  top: 70px; /* Below the 53px header + 17px padding */
-  height: auto; /* Remove 100vh */
+  top: 70px; 
+  height: auto;
   padding-top: 17px;
 }
 
@@ -163,8 +171,7 @@ body {
   background-color: #f7f9f9;
   border-radius: var(--border-radius);
   padding: 12px 16px;
-  margin-top: 0; /* Remove top margin */
-  margin-bottom: 16px; /* Add bottom margin */
+  margin-bottom: 16px;
 }
 .widget-card h4 {
   margin: 0 0 12px 0;
@@ -235,7 +242,7 @@ body {
 }
 .page-feed-header {
   position: sticky;
-  top: 53px; /* Stick below the main header */
+  top: 53px;
   background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
   padding: 16px;
@@ -340,6 +347,11 @@ body {
 }
 .event-card-social strong {
   color: var(--text-color);
+}
+.event-card-social span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Actions */
