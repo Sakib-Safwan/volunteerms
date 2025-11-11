@@ -5,8 +5,9 @@ import { useNavigate } from 'react-router-dom';
 function CreateEventPage() {
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [locationAddress, setLocationAddress] = useState(''); // REVERTED
   const [eventDescription, setEventDescription] = useState('');
-  const [eventImage, setEventImage] = useState(null); // State for image file
+  const [eventImage, setEventImage] = useState(null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -21,11 +22,12 @@ function CreateEventPage() {
     setError('');
     const token = localStorage.getItem('token');
 
-    // Use FormData to send image + text
     const formData = new FormData();
     formData.append('name', eventName);
     formData.append('date', eventDate);
     formData.append('description', eventDescription);
+    formData.append('locationAddress', locationAddress); // REVERTED
+
     if (eventImage) {
       formData.append('image', eventImage);
     }
@@ -33,11 +35,11 @@ function CreateEventPage() {
     try {
       await axios.post(
         'http://localhost:8080/events',
-        formData, // Send formData instead of JSON
+        formData, 
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data', // IMPORTANT
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
@@ -72,6 +74,17 @@ function CreateEventPage() {
             <input
               id="eventDate" type="date" value={eventDate}
               onChange={(e) => setEventDate(e.target.value)} required
+            />
+          </div>
+
+          {/* REVERTED: Location Address Field */}
+          <div className="form-group">
+            <label htmlFor="locationAddress">Location Address (Optional)</label>
+            <textarea
+              id="locationAddress"
+              rows="2"
+              value={locationAddress}
+              onChange={(e) => setLocationAddress(e.target.value)}
             />
           </div>
 

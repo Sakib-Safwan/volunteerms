@@ -464,3 +464,37 @@ body {
   color: var(--text-color-light);
   margin-top: 4px;
 }
+/* --- Event Card Location --- */
+.event-card-location {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-color-light);
+  margin: 0 0 8px 0;
+}
+
+/* --- Event Card Location --- */
+.event-card-location {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-color-light);
+  margin: 0 0 8px 0;
+}
+
+/* --- Map Link Button --- */
+.btn-map-link {
+  display: inline-block;
+  background-color: #f7f9f9;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  margin-left: 12px;
+}
+.btn-map-link:hover {
+  background-color: #eff3f4;
+}

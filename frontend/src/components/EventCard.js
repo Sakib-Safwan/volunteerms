@@ -10,28 +10,30 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'UTC' // Add timezone to avoid off-by-one day errors
+    timeZone: 'UTC'
   });
 
-  // Handler for the registration button
+  // REVERTED: Create Google Maps link from address string
+  const mapLink = event.locationAddress 
+    ? `https://www.google.com/maps?q=${encodeURIComponent(event.locationAddress)}`
+    : null;
+
   const handleRegister = async (e) => {
-    e.stopPropagation(); // Stop click from bubbling up to the card's onClick
+    e.stopPropagation();
     setIsRegistering(true);
     setError('');
     const token = localStorage.getItem('token');
-
     try {
       await axios.post(
         `http://localhost:8080/events/${event.id}/register`,
-        {}, // Empty body
+        {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Success!
       setIsRegistered(true);
     } catch (err) {
       if (err.response && err.response.status === 409) {
         setError('Already registered.');
-        setIsRegistered(true); // Mark as registered if server says so
+        setIsRegistered(true);
       } else {
         setError('Registration failed.');
       }
@@ -40,10 +42,13 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
     }
   };
 
+  const handleMapClick = (e) => {
+    e.stopPropagation(); // Don't trigger the card's onClick
+  };
+
   return (
     <article className={`event-card-tweet ${className}`} onClick={onClick}> 
       
-      {/* Show Image if it exists */}
       {event.imageUrl && (
         <img src={event.imageUrl} alt={event.name} className="event-card-image" />
       )}
@@ -53,19 +58,27 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
           <div className="event-avatar"><span>📅</span></div>
           <div className="event-header-info">
             <span className="event-organizer">{event.createdBy ? `by ${event.createdBy.split('@')[0]}` : 'Organizer'}</span>
+            {/* Typo 'spanZ' fixed to 'span' */}
             <span className="event-date"> • {formattedDate}</span>
           </div>
         </div>
         
         <div className="event-card-body">
           <h3 className="event-card-title">{event.name}</h3>
+          
+          {/* UPDATED: Show location address if it exists */}
+          {event.locationAddress && (
+            <p className="event-card-location">
+              📍 {event.locationAddress}
+            </p>
+          )}
+
           <p className="event-card-description">{event.description}</p>
         </div>
       </div>
       
-      {/* Conditional rendering of the footer */}
-      {showRegisterButton && (
-        <div className="event-card-actions">
+      <div className="event-card-actions">
+        {showRegisterButton && (
           <button 
             className="btn btn-primary btn-register"
             onClick={handleRegister}
@@ -73,9 +86,23 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
           >
             {isRegistered ? 'Registered' : (isRegistering ? 'Registering...' : 'Register Now')}
           </button>
-          {error && <span className="error-message-small">{error}</span>}
-        </div>
-      )}
+        )}
+        
+        {/* REVERTED: Map Link (works with address) */}
+        {mapLink && (
+          <a
+            href={mapLink}
+            target="_blank" // Open in new tab
+            rel="noopener noreferrer"
+            className="btn-map-link"
+            onClick={handleMapClick}
+          >
+            View Map
+          </a>
+        )}
+        
+        {error && <span className="error-message-small">{error}</span>}
+      </div>
     </article>
   );
 }
