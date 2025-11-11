@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-// NEW: Add 'showRegisterButton = true' as a default prop
-function EventCard({ event, showRegisterButton = true }) {
+function EventCard({ event, showRegisterButton = true, onClick = () => {}, className = '' }) {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
@@ -11,11 +10,12 @@ function EventCard({ event, showRegisterButton = true }) {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'UTC'
+    timeZone: 'UTC' // Add timezone to avoid off-by-one day errors
   });
 
-  // NEW: Handler for the registration button
-  const handleRegister = async () => {
+  // Handler for the registration button
+  const handleRegister = async (e) => {
+    e.stopPropagation(); // Stop click from bubbling up to the card's onClick
     setIsRegistering(true);
     setError('');
     const token = localStorage.getItem('token');
@@ -41,23 +41,29 @@ function EventCard({ event, showRegisterButton = true }) {
   };
 
   return (
-    <article className="event-card-tweet">
-      <div className="event-card-header">
-        <div className="event-avatar">
-          <span>📅</span>
+    <article className={`event-card-tweet ${className}`} onClick={onClick}> 
+      
+      {/* Show Image if it exists */}
+      {event.imageUrl && (
+        <img src={event.imageUrl} alt={event.name} className="event-card-image" />
+      )}
+
+      <div className="event-card-content">
+        <div className="event-card-header">
+          <div className="event-avatar"><span>📅</span></div>
+          <div className="event-header-info">
+            <span className="event-organizer">{event.createdBy ? `by ${event.createdBy.split('@')[0]}` : 'Organizer'}</span>
+            <span className="event-date"> • {formattedDate}</span>
+          </div>
         </div>
-        <div className="event-header-info">
-          <span className="event-organizer">{event.createdBy ? `by ${event.createdBy.split('@')[0]}` : 'Organizer'}</span>
-          <span className="event-date"> • {formattedDate}</span>
+        
+        <div className="event-card-body">
+          <h3 className="event-card-title">{event.name}</h3>
+          <p className="event-card-description">{event.description}</p>
         </div>
       </div>
       
-      <div className="event-card-body">
-        <h3 className="event-card-title">{event.name}</h3>
-        <p className="event-card-description">{event.description}</p>
-      </div>
-      
-      {/* NEW: Conditional rendering of the footer */}
+      {/* Conditional rendering of the footer */}
       {showRegisterButton && (
         <div className="event-card-actions">
           <button 

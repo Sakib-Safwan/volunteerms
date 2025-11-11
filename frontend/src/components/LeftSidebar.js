@@ -22,13 +22,17 @@ function LeftSidebar() {
         <ul className="nav-list">
           <li className="nav-item">
             <NavLink to="/home" className="nav-pill">
-              {/* You can add <img> or <svg> icons here */}
               <span className="nav-icon">🏠</span> Home
             </NavLink>
           </li>
           <li className="nav-item">
             <NavLink to="/events" className="nav-pill">
               <span className="nav-icon">📅</span> Events
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink to="/profile" className="nav-pill">
+              <span className="nav-icon">👤</span> Profile
             </NavLink>
           </li>
           

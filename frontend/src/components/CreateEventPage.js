@@ -6,22 +6,40 @@ function CreateEventPage() {
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventDescription, setEventDescription] = useState('');
+  const [eventImage, setEventImage] = useState(null); // State for image file
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const handleImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setEventImage(e.target.files[0]);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     const token = localStorage.getItem('token');
+
+    // Use FormData to send image + text
+    const formData = new FormData();
+    formData.append('name', eventName);
+    formData.append('date', eventDate);
+    formData.append('description', eventDescription);
+    if (eventImage) {
+      formData.append('image', eventImage);
+    }
+
     try {
       await axios.post(
         'http://localhost:8080/events',
-        { 
-          name: eventName, 
-          date: eventDate, 
-          description: eventDescription 
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        formData, // Send formData instead of JSON
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data', // IMPORTANT
+          },
+        }
       );
       navigate('/events');
     } catch (err) {
@@ -39,7 +57,6 @@ function CreateEventPage() {
         <h2>Create a New Event</h2>
       </div>
 
-      {/* The form-container is now *inside* the feed */}
       <div className="form-container-in-feed">
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -55,6 +72,17 @@ function CreateEventPage() {
             <input
               id="eventDate" type="date" value={eventDate}
               onChange={(e) => setEventDate(e.target.value)} required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="eventImage">Event Image (Optional)</label>
+            <input
+              id="eventImage"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="file-input"
             />
           </div>
 

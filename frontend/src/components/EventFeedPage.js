@@ -14,12 +14,6 @@ function EventFeedPage() {
         setEvents(response.data.events || []);
       } catch (err) {
         setError('Could not fetch events.');
-        // MOCK DATA for styling
-        setEvents([
-          {id: 1, name: "Downtown Charity Run", date: "2025-12-01", description: "Join us for our 5th annual charity 5k run. All proceeds go to the local children's hospital."},
-          {id: 2, name: "Beach Cleanup Day", date: "2025-12-05", description: "Let's make our beaches clean! We'll provide gloves, bags, and water. See you there!"},
-          {id: 3, name: "Community Soup Kitchen", date: "2025-12-10", description: "We need volunteers to help prep and serve warm meals."}
-        ]);
       } finally {
         setLoading(false);
       }

@@ -1,13 +1,13 @@
 import React from 'react';
 
 function RightSidebar() {
+  const role = localStorage.getItem('role');
   return (
     <aside className="right-sidebar">
       <div className="sidebar-sticky-content">
         <div className="widget-card">
           <h4>Your Profile</h4>
-          <p>Welcome, {localStorage.getItem('role')}!</p>
-          {/* You could add a "View Profile" link here */}
+          <p>Welcome, {role || 'User'}!</p>
         </div>
 
         <div className="widget-card">
