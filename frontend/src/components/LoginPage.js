@@ -22,7 +22,7 @@ function LoginPage() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('role', response.data.role);
       
-      // Navigate to the dashboard
+      // Navigate to the home/dashboard page
       navigate('/home'); 
 
     } catch (err) {

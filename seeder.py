@@ -3,7 +3,8 @@ import bcrypt
 import random
 from faker import Faker
 import os
-from datetime import datetime, timedelta
+import datetime
+from datetime import timedelta
 
 # --- Configuration ---
 NUM_VOLUNTEERS = 50
@@ -12,7 +13,7 @@ NUM_EVENTS = 20
 DB_PATH = os.path.join('backend', 'vms.db') # Assumes script is in the root folder
 DEFAULT_PASSWORD = "pass123"
 
-# Pre-defined skills list (from your idea)
+# Pre-defined skills list
 SKILL_LIST = [
     "First Aid", "Graphic Design", "Public Speaking", "Data Entry",
     "Event Planning", "Fundraising", "Social Media", "Driving",
@@ -25,7 +26,6 @@ db = None
 
 def hash_password(password):
     """Hashes a password using bcrypt, compatible with Go's DefaultCost."""
-    # Go's DefaultCost is 10.
     salt = bcrypt.gensalt(rounds=10)
     hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
     return hashed.decode('utf-8')
@@ -37,24 +37,22 @@ def create_users(cursor):
     
     # Create Volunteers
     for _ in range(NUM_VOLUNTEERS):
-        full_name = fake.name() # NEW
+        full_name = fake.name()
         email = fake.unique.email()
         hashed_pass = hash_password(DEFAULT_PASSWORD)
-        # NEW: Generate a default placeholder image
         pfp_url = f"https://placehold.co/100x100/E8F5FF/1D9BF0?text={full_name[0]}"
-        users.append((full_name, email, hashed_pass, "Volunteer", pfp_url)) # NEW: Added name, pfp_url
+        users.append((full_name, email, hashed_pass, "Volunteer", pfp_url))
 
     # Create Organizers
     for _ in range(NUM_ORGANIZERS):
-        full_name = fake.name() # NEW
+        full_name = fake.name()
         email = fake.unique.email()
         hashed_pass = hash_password(DEFAULT_PASSWORD)
         pfp_url = f"https://placehold.co/100x100/E8F5FF/1D9BF0?text={full_name[0]}"
-        users.append((full_name, email, hashed_pass, "Organizer", pfp_url)) # NEW: Added name, pfp_url
+        users.append((full_name, email, hashed_pass, "Organizer", pfp_url))
     
     try:
         cursor.executemany(
-            # NEW: Updated query
             "INSERT INTO users (name, email, password_hash, role, profile_image_url) VALUES (?, ?, ?, ?, ?)",
             users
         )
@@ -66,7 +64,6 @@ def create_events(cursor):
     """Creates random events assigned to organizers."""
     print(f"Creating {NUM_EVENTS} events...")
     
-    # Get all organizer IDs
     cursor.execute("SELECT id FROM users WHERE role = 'Organizer'")
     organizer_ids = [row[0] for row in cursor.fetchall()]
     
@@ -74,19 +71,15 @@ def create_events(cursor):
         print("No organizers found to create events. Aborting.")
         return
 
-    # --- FIXED: Use explicit datetime objects ---
-    now = datetime.now()
+    now = datetime.datetime.now()
     start_date = now + timedelta(weeks=1)
     end_date = now + timedelta(days=180) # 6 months from now
 
     events = []
     for _ in range(NUM_EVENTS):
-        name = fake.bs().title() + " Drive" # e.g., "Implement User-Centric Solutions Drive"
-        
-        # Use the fixed datetime objects
+        name = fake.bs().title() + " Drive"
         event_date_obj = fake.date_between_dates(date_start=start_date, date_end=end_date)
         date = event_date_obj.isoformat()
-
         description = fake.text(max_nb_chars=150)
         location = fake.address().replace('\n', ', ')
         image_url = f"https://placehold.co/600x200/1D9BF0/FFFFFF?text={name.replace(' ', '+')}"
@@ -119,16 +112,13 @@ def create_registrations(cursor):
         return
 
     registrations = []
-    # Each volunteer registers for 0 to 3 events
     for vol_id in volunteer_ids:
         num_events = random.randint(0, 3)
         events_to_register = random.sample(event_ids, num_events)
         for event_id in events_to_register:
-            # Use tuple (user_id, event_id) to ensure uniqueness
             registrations.append((vol_id, event_id))
 
     try:
-        # INSERT OR IGNORE avoids duplicates
         cursor.executemany(
             "INSERT OR IGNORE INTO registrations (user_id, event_id) VALUES (?, ?)",
             registrations
@@ -137,39 +127,35 @@ def create_registrations(cursor):
     except Exception as e:
         print(f"Error creating registrations: {e}")
 
-def create_friendships(cursor):
-    """Randomly creates mutual friendships between volunteers."""
-    print("Creating random friendships...")
+def create_follows(cursor): # RENAMED
+    """Randomly creates one-way follows."""
+    print("Creating random follows...")
     
-    cursor.execute("SELECT id FROM users WHERE role = 'Volunteer'")
-    v_ids = [row[0] for row in cursor.fetchall()]
+    cursor.execute("SELECT id FROM users") # All users can follow
+    all_user_ids = [row[0] for row in cursor.fetchall()]
     
-    if len(v_ids) < 2:
-        print("Not enough volunteers to create friendships.")
+    if len(all_user_ids) < 2:
+        print("Not enough users to create follows.")
         return
 
-    friendships = []
-    # Each volunteer becomes friends with 0 to 5 other volunteers
-    for user_id_a in v_ids:
-        num_friends = random.randint(0, 5)
-        # Find 5 potential friends who are not the user
-        potential_friends = [uid for uid in v_ids if uid != user_id_a]
-        new_friends = random.sample(potential_friends, min(num_friends, len(potential_friends)))
+    follows = []
+    # Each user follows 0 to 10 other people
+    for user_id_a in all_user_ids:
+        num_follows = random.randint(0, 10)
+        potential_follows = [uid for uid in all_user_ids if uid != user_id_a]
+        new_follows = random.sample(potential_follows, min(num_follows, len(potential_follows)))
         
-        for user_id_b in new_friends:
-            # Add both directions
-            friendships.append((user_id_a, user_id_b))
-            friendships.append((user_id_b, user_id_a))
+        for user_id_b in new_follows:
+            follows.append((user_id_a, user_id_b)) # One-way
 
     try:
-        # INSERT OR IGNOTE avoids duplicates
         cursor.executemany(
-            "INSERT OR IGNORE INTO friendships (user_id_a, user_id_b) VALUES (?, ?)",
-            friendships
+            "INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)", # RENAMED
+            follows
         )
-        print("Friendships created successfully.")
+        print("Follows created successfully.")
     except Exception as e:
-        print(f"Error creating friendships: {e}")
+        print(f"Error creating follows: {e}")
 
 def create_skills(cursor):
     """Assigns random skills to volunteers."""
@@ -183,7 +169,6 @@ def create_skills(cursor):
         return
 
     skills_data = []
-    # Each volunteer gets 1 to 4 random skills
     for vol_id in volunteer_ids:
         num_skills = random.randint(1, 4)
         my_skills = random.sample(SKILL_LIST, num_skills)
@@ -205,25 +190,21 @@ def main():
         db = sqlite3.connect(DB_PATH)
         cursor = db.cursor()
         
-        # Clear existing data from tables in the correct order
         print("Clearing old data...")
         cursor.execute("DELETE FROM user_skills")
-        cursor.execute("DELETE FROM friendships")
+        cursor.execute("DELETE FROM follows") # RENAMED
         cursor.execute("DELETE FROM registrations")
         cursor.execute("DELETE FROM events")
         cursor.execute("DELETE FROM users")
         
-        # Reset auto-increment counters
         cursor.execute("DELETE FROM sqlite_sequence")
         
-        # Run seeding functions
         create_users(cursor)
         create_events(cursor)
         create_registrations(cursor)
-        create_friendships(cursor)
+        create_follows(cursor) # RENAMED
         create_skills(cursor)
 
-        # Commit changes and close
         db.commit()
         print("\nDatabase successfully seeded with random data!")
         

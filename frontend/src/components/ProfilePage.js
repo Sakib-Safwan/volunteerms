@@ -1,96 +1,174 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-// ... (SkillTagInput component remains the same) ...
+// This is our simple tag input component
 function SkillTagInput({ skills, setSkills }) {
   const [inputValue, setInputValue] = useState('');
-  const handleKeyDown = (e) => { if (e.key !== 'Enter' || !inputValue.trim()) return; e.preventDefault(); if (skills.includes(inputValue)) { setInputValue(''); return; } setSkills([...skills, inputValue.trim()]); setInputValue(''); };
-  const removeSkill = (skillToRemove) => { setSkills(skills.filter(skill => skill !== skillToRemove)); };
+
+  const handleKeyDown = (e) => {
+    if (e.key !== 'Enter' || !inputValue.trim()) return;
+    e.preventDefault();
+    if (skills.includes(inputValue)) {
+      setInputValue(''); // Clear input if skill already exists
+      return;
+    }
+    setSkills([...skills, inputValue.trim()]);
+    setInputValue('');
+  };
+
+  const removeSkill = (skillToRemove) => {
+    setSkills(skills.filter(skill => skill !== skillToRemove));
+  };
+
   return (
     <div className="skill-input-container">
-      <div className="skill-tags">{skills.map((skill, index) => (<div key={index} className="skill-tag">{skill}<button onClick={() => removeSkill(skill)}>&times;</button></div>))}</div>
-      <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Type a skill and press Enter..."/>
+      <div className="skill-tags">
+        {skills.map((skill, index) => (
+          <div key={index} className="skill-tag">
+            {skill}
+            <button onClick={() => removeSkill(skill)}>&times;</button>
+          </div>
+        ))}
+      </div>
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Type a skill and press Enter..."
+      />
+    </div>
+  );
+}
+
+// User Card for Following/Followers list
+function UserCard({ user }) {
+  return (
+    <div className="user-card-condensed">
+      <img 
+        src={user.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${user.name[0]}`} 
+        alt={user.name}
+        className="user-card-avatar-small"
+      />
+      <div className="user-card-info">
+        <strong>{user.name}</strong>
+        <span>{user.email}</span>
+      </div>
     </div>
   );
 }
 
 
+// The main profile page component
 function ProfilePage() {
-  const [user, setUser] = useState(null); // NEW: Store full user object
+  const [profile, setProfile] = useState(null);
   const [skills, setSkills] = useState([]);
-  const [friends, setFriends] = useState([]);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
-  const userRole = localStorage.getItem('role');
+  const [activeTab, setActiveTab] = useState('skills'); // skills | following | followers
+
+  const fileInputRef = useRef(null);
   const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('role');
 
   // 1. Fetch all profile data on load
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const fetchAllData = async () => {
+      if (!token) {
+        setError('Not authorized');
+        setLoading(false);
+        return;
+      }
+      
       try {
-        const [profileRes, skillsRes, friendsRes] = await Promise.all([
-          axios.get('http://localhost:8080/profile/me', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:8080/profile/skills', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:8080/friends', { headers: { Authorization: `Bearer ${token}` } })
+        setLoading(true);
+        // Run all requests in parallel
+        const [profileRes, skillsRes, followersRes, followingRes] = await Promise.all([
+          axios.get('http://localhost:8080/profile/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:8080/profile/skills', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:8080/users/followers', {
+             headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:8080/users/following', {
+             headers: { Authorization: `Bearer ${token}` }
+          })
         ]);
         
-        setUser(profileRes.data);
+        setProfile(profileRes.data);
         setSkills(skillsRes.data.skills || []);
-        setFriends(friendsRes.data.friends || []);
+        setFollowers(followersRes.data.users || []);
+        setFollowing(followingRes.data.users || []);
+        
       } catch (err) {
         setError('Could not fetch profile data.');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchProfileData();
+    fetchAllData();
   }, [token]);
 
   // 2. Save skills
   const handleSaveSkills = async () => {
-    // ... (same as before) ...
-    setError(''); setStatus('Saving...');
+    setError('');
+    setStatus('Saving...');
     try {
-      await axios.post('http://localhost:8080/profile/skills', { skills: skills }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(
+        'http://localhost:8080/profile/skills',
+        { skills: skills }, // Send the skills array
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setStatus('Skills updated successfully!');
-      setTimeout(() => setStatus(''), 3000);
-    } catch (err) { setError('Could not update skills.'); setStatus(''); }
+      setTimeout(() => setStatus(''), 3000); // Clear status after 3s
+    } catch (err) {
+      setError('Could not update skills.');
+      setStatus('');
+    }
   };
 
-  // 3. NEW: Handle Profile Picture Upload
-  const handlePictureUpload = async (e) => {
+  // 3. Handle Profile Picture Upload
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const formData = new FormData();
     formData.append('profilePicture', file);
+    setError('');
     setStatus('Uploading...');
 
     try {
-      const response = await axios.post(
+      const res = await axios.post(
         'http://localhost:8080/profile/picture',
         formData,
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
       );
-      
-      // Update the user state with the new image URL
-      setUser(prevUser => ({ ...prevUser, profileImageUrl: response.data.imageUrl }));
+      // Update profile state with new image URL
+      setProfile(prev => ({ ...prev, profileImageUrl: res.data.imageUrl }));
       setStatus('Profile picture updated!');
       setTimeout(() => setStatus(''), 3000);
-
     } catch (err) {
-      setError('Could not upload profile picture.');
+      setError('Failed to upload picture.');
       setStatus('');
     }
   };
 
   if (loading) {
-    return <div className="page-feed-container"><div className="loading-message">Loading profile...</div></div>;
-  }
-  
-  if (!user) {
-    return <div className="page-feed-container"><div className="error-message">{error || 'Could not load user.'}</div></div>;
+    return (
+      <div className="page-feed-container">
+        <div className="page-feed-header">
+          <h2>My Profile</h2>
+        </div>
+        <div className="loading-message">Loading profile...</div>
+      </div>
+    );
   }
 
   return (
@@ -99,77 +177,92 @@ function ProfilePage() {
         <h2>My Profile</h2>
       </div>
 
-      {/* NEW: Profile Picture Uploader Section */}
       <div className="form-container-in-feed">
-        <div className="profile-header">
-          <img 
-            src={user.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${user.name[0]}`}
-            alt={user.name} 
-            className="profile-picture-large"
-          />
-          <div className="profile-header-info">
-            <h3>{user.name}</h3>
-            <p>{user.email}</p>
-            <label htmlFor="pictureUpload" className="btn-upload-label">
-              Change Picture
-            </label>
-            <input
-              id="pictureUpload"
-              type="file"
-              accept="image/*"
-              onChange={handlePictureUpload}
-              style={{ display: 'none' }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="form-container-in-feed" style={{marginTop: '20px'}}>
-        <div className="form-group">
-          <label>Your Role</label>
-          <input type="text" value={user.role} disabled />
-        </div>
-
-        {userRole === 'Volunteer' && (
-          <div className="form-group">
-            <label>Your Skills</label>
-            <SkillTagInput skills={skills} setSkills={setSkills} />
-          </div>
-        )}
-
         {error && <p className="error-message">{error}</p>}
         {status && <p className="status-message">{status}</p>}
 
-        {userRole === 'Volunteer' && (
-          <button onClick={handleSaveSkills} className="btn btn-primary" style={{ width: 'auto' }}>
-            Save Skills
-          </button>
-        )}
-      </div>
-
-      {/* Friends List Section */}
-      <div className="form-container-in-feed" style={{marginTop: '20px'}}>
-        <h3>Your Friends</h3>
-        {loading ? <p>Loading friends...</p> : (
-          <div className="user-card-grid-condensed">
-            {friends.length === 0 ? <p>You haven't added any friends yet.</p> : (
-              friends.map(friend => (
-                <div key={friend.id} className="user-card-condensed">
-                  <img 
-                    src={friend.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${friend.name[0]}`}
-                    alt={friend.name}
-                    className="user-card-avatar-small"
-                  />
-                  <div className="user-card-info">
-                    <strong>{friend.name}</strong>
-                    <span>{friend.email}</span>
-                  </div>
-                </div>
-              ))
-            )}
+        {profile && (
+          <div className="profile-header">
+            <img 
+              src={profile.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${profile.name[0]}`} 
+              alt={profile.name}
+              className="profile-picture-large"
+            />
+            <div className="profile-header-info">
+              <h3>{profile.name}</h3>
+              <p>{profile.email}</p>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                onChange={handleFileChange} 
+                accept="image/*"
+              />
+              <button className="btn-upload-label" onClick={() => fileInputRef.current.click()}>
+                Change Picture
+              </button>
+            </div>
           </div>
         )}
       </div>
+      
+      {/* --- TABS --- */}
+      <div className="profile-tabs">
+        {userRole === 'Volunteer' && (
+          <button 
+            className={`profile-tab-btn ${activeTab === 'skills' ? 'active' : ''}`}
+            onClick={() => setActiveTab('skills')}
+          >
+            My Skills
+          </button>
+        )}
+        <button 
+          className={`profile-tab-btn ${activeTab === 'following' ? 'active' : ''}`}
+          onClick={() => setActiveTab('following')}
+        >
+          Following ({following.length})
+        </button>
+        <button 
+          className={`profile-tab-btn ${activeTab === 'followers' ? 'active' : ''}`}
+          onClick={() => setActiveTab('followers')}
+        >
+          Followers ({followers.length})
+        </button>
+      </div>
+      
+      {/* --- TAB CONTENT --- */}
+      <div className="profile-tab-content">
+        
+        {userRole === 'Volunteer' && activeTab === 'skills' && (
+          <div className="form-container-in-feed">
+            <div className="form-group">
+              <label>Your Skills</label>
+              <SkillTagInput skills={skills} setSkills={setSkills} />
+            </div>
+            <button onClick={handleSaveSkills} className="btn btn-primary" style={{ width: 'auto' }}>
+              Save Skills
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'following' && (
+          <div className="user-card-grid-condensed">
+            {following.length === 0 ? <p>You are not following anyone yet.</p> :
+              following.map(user => <UserCard key={user.id} user={user} />)
+            }
+          </div>
+        )}
+        
+        {activeTab === 'followers' && (
+          <div className="user-card-grid-condensed">
+            {followers.length === 0 ? <p>You have no followers yet.</p> :
+              followers.map(user => <UserCard key={user.id} user={user} />)
+            }
+          </div>
+        )}
+        
+      </div>
+
     </div>
   );
 }

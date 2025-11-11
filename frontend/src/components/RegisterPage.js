@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
 function RegisterPage() {
-  const [name, setName] = useState(''); // NEW
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Volunteer');
@@ -15,7 +15,7 @@ function RegisterPage() {
     setError('');
 
     try {
-      // NEW: Send all fields
+      // Send all fields
       await axios.post('http://localhost:8080/register', {
         name: name,
         email: email,
@@ -37,7 +37,7 @@ function RegisterPage() {
       <form onSubmit={handleSubmit}>
         <h2>Create Your Account</h2>
         
-        {/* NEW: Full Name Field */}
+        {/* Full Name Field */}
         <div className="form-group">
           <label htmlFor="name">Full Name</label>
           <input

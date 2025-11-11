@@ -29,7 +29,8 @@ body {
 /* --- Twitter 3-Column Layout --- */
 .app-layout {
   display: grid;
-  grid-template-columns: 275px 1fr 350px; /* Nav | Feed | Widgets */
+  /* Adjust columns to prevent overlap */
+  grid-template-columns: minmax(68px, 275px) minmax(0, 1fr) minmax(300px, 350px);
   max-width: 1265px;
   margin: 0 auto;
 }
@@ -38,6 +39,8 @@ body {
   border-left: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   min-height: 100vh;
+  /* Set min-width to prevent content from being crushed */
+  min-width: 600px;
 }
 
 .left-sidebar,
@@ -132,7 +135,6 @@ body {
   color: var(--text-color-light);
   margin: 0;
 }
-
 .sidebar-profile {
   display: flex;
   align-items: center;
@@ -146,14 +148,14 @@ body {
   font-weight: 600;
 }
 .sidebar-profile-info span {
-  color: var(--text-color-light);
   font-size: 14px;
+  color: var(--text-color-light);
 }
 
 
 /* --- Main Feed Column --- */
 .page-feed-container {
-  /* No styles needed here, it's just a wrapper */
+  min-width: 0; /* Prevents overflow */
 }
 .page-feed-header {
   position: sticky;
@@ -178,29 +180,26 @@ body {
 }
 .error-message {
   color: var(--error-color);
-  font-weight: 500;
 }
 
 /* --- Event Card (Tweet Style) --- */
 .event-card-tweet {
-  padding: 0; /* Remove old padding */
+  padding: 0;
   border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s;
 }
-.event-card-tweet:hover {
-  background-color: #f7f7f7;
-}
-.clickable-card {
+.event-card-tweet.clickable-card {
   cursor: pointer;
 }
-
+.event-card-tweet.clickable-card:hover {
+  background-color: #f7f7f7;
+}
 .event-card-image {
   width: 100%;
-  height: 200px; /* Or aspect-ratio: 16/9; */
+  height: 200px;
   object-fit: cover;
   border-bottom: 1px solid var(--border-color);
 }
-
 .event-card-content {
   padding: 12px 16px;
 }
@@ -218,13 +217,7 @@ body {
   align-items: center;
   justify-content: center;
   margin-right: 12px;
-  flex-shrink: 0;
-}
-.event-header-info {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
+  overflow: hidden; /* For avatar images */
 }
 .event-organizer {
   font-weight: 700;
@@ -233,9 +226,8 @@ body {
   color: var(--text-color-light);
   font-size: 15px;
 }
-
 .event-card-body {
-  margin-left: 0; /* Remove old alignment */
+  margin-left: 0;
 }
 .event-card-title {
   font-size: 1.1rem;
@@ -243,33 +235,37 @@ body {
   margin: 0 0 8px 0;
 }
 .event-card-description {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 15px;
   color: var(--text-color);
+  white-space: pre-wrap; /* Preserves line breaks */
 }
 .event-card-location {
+  display: inline-block;
   color: var(--primary-color);
   text-decoration: none;
   font-weight: 500;
+  font-size: 14px;
+  margin-top: 10px;
 }
 .event-card-location:hover {
   text-decoration: underline;
 }
 
-/* SOCIAL CONTEXT */
+/* Social Context */
 .event-card-social {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border-color);
-  background-color: #f7f9f9;
-}
-.event-card-social span {
+  padding: 10px 16px 10px 68px; /* Aligns with content */
   font-size: 14px;
   color: var(--text-color-light);
-  font-weight: 500;
+  border-top: 1px solid var(--border-color);
+}
+.event-card-social strong {
+  color: var(--text-color);
 }
 
+/* Actions */
 .event-card-actions {
-  padding: 12px 16px;
+  padding: 4px 16px 12px 68px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -284,7 +280,8 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
-  width: auto; /* Override default button width */
+  width: auto; /* Override full width */
+  min-width: 100px;
 }
 .btn.btn-primary.btn-register:hover {
   background-color: var(--primary-color-dark);
@@ -300,7 +297,6 @@ body {
   font-weight: 500;
 }
 
-
 /* --- Login/Register Pages (Full Screen) --- */
 .form-container {
   max-width: 420px;
@@ -310,12 +306,6 @@ body {
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-/* This is the new style for forms INSIDE the feed */
-.form-container-in-feed {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
 }
 
 .form-container h2 {
@@ -346,11 +336,6 @@ body {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: #f7f9f9;
 }
-.form-group input:disabled {
-  background-color: #eff3f4;
-  opacity: 0.8;
-}
-
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
@@ -385,49 +370,197 @@ body {
 .btn-primary:hover {
   background-color: var(--primary-color-dark);
 }
-
-/* --- Profile Page --- */
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.profile-picture-large {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.profile-header-info h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.5rem;
-}
-.profile-header-info p {
-  margin: 0;
-  color: var(--text-color-light);
-}
 .btn-upload-label {
-  display: inline-block;
-  padding: 6px 16px;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 9999px;
+  padding: 6px 14px;
   font-size: 14px;
   font-weight: 600;
-  border-radius: 9999px;
   cursor: pointer;
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
-  background-color: white;
-  transition: all 0.2s;
-  margin-top: 12px;
+  transition: background-color 0.2s;
 }
 .btn-upload-label:hover {
   background-color: rgba(29, 155, 240, 0.1);
 }
+
+/* --- Network/Profile Page --- */
+.search-bar-container {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  background-color: #f7f9f9;
+  box-sizing: border-box;
+}
+.search-input:focus {
+  outline: none;
+  background-color: white;
+  border-color: var(--primary-color);
+}
+
+/* --- User Card Grid (For Network Page) --- */
+.user-card-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* 1 column */
+  gap: 0;
+}
+.user-card {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+}
+.user-card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #e7e7e8;
+  flex-shrink: 0; /* Prevents avatar from shrinking */
+}
+.user-card-avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #e7e7e8;
+  flex-shrink: 0;
+}
+.user-card-info {
+  display: flex;
+  flex-direction: column;
+  /* Grow to fill space, push button to the right */
+  flex-grow: 1; 
+  /* Prevent text overflow */
+  min-width: 0; 
+}
+.user-card-info strong {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-card-info span {
+  color: var(--text-color-light);
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-card-role {
+  font-size: 13px !important;
+  font-weight: 600;
+  color: var(--primary-color) !important;
+  text-transform: uppercase;
+}
+.btn-add-friend {
+  /* This is the "Follow" button */
+  background-color: var(--text-color);
+  color: white;
+  border: 1px solid var(--text-color);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  /* Stop button from shrinking */
+  flex-shrink: 0; 
+  transition: all 0.2s;
+  width: auto;
+}
+.btn-add-friend.followed {
+  /* This is the "Following" button */
+  background-color: transparent;
+  color: var(--text-color);
+}
+.btn-add-friend:hover {
+  opacity: 0.8;
+}
+
+/* --- Profile Page --- */
+.form-container-in-feed {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.profile-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.profile-picture-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #e7e7e8;
+}
+.profile-header-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+}
+.profile-header-info p {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: var(--text-color-light);
+}
 .status-message {
   color: green;
   font-weight: 500;
+  font-size: 15px;
   margin-top: 10px;
+}
+
+/* Profile Tabs */
+.profile-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+.profile-tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color-light);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 2px solid transparent;
+}
+.profile-tab-btn:hover {
+  background-color: #f7f9f9;
+}
+.profile-tab-btn.active {
+  color: var(--text-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.profile-tab-content {
+  /* No styles needed, content is inside */
+}
+.user-card-grid-condensed {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.user-card-condensed {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+}
+.user-card-condensed:last-child {
+  border-bottom: none;
 }
 
 /* --- Skill Tag Input Styles --- */
@@ -476,98 +609,6 @@ body {
   padding: 0.85rem !important;
 }
 
-/* --- Network / User Card Styles --- */
-.search-bar-container {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-.search-input {
-  width: 100%;
-  padding: 0.75rem 1.25rem;
-  box-sizing: border-box;
-  border: none;
-  border-radius: 9999px;
-  background-color: #f7f9f9;
-  font-size: 1rem;
-  font-family: inherit;
-}
-.search-input:focus {
-  outline: 2px solid var(--primary-color);
-  background-color: white;
-}
-.user-card-grid {
-  display: grid;
-  grid-template-columns: 1fr; /* 1 column by default */
-  gap: 12px;
-  padding: 16px;
-}
-/* 2 columns on larger screens */
-@media (min-width: 1024px) {
-  .user-card-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.user-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--border-color);
-  background-color: #f7f9f9;
-}
-.user-card-avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.user-card-avatar-small {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.user-card-info {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-.user-card-info strong {
-  font-weight: 600;
-}
-.user-card-info span {
-  color: var(--text-color-light);
-  font-size: 14px;
-}
-.user-card-role {
-  font-size: 12px !important;
-  font-weight: 500;
-  color: var(--primary-color) !important;
-}
-.btn-add-friend {
-  width: auto !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  padding: 6px 16px !important;
-  flex-shrink: 0;
-}
-.btn-add-friend:disabled {
-  background-color: var(--text-color-light);
-  opacity: 0.7;
-}
-.user-card-grid-condensed {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-.user-card-condensed {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 /* --- Modal Styles --- */
 .modal-backdrop {
   position: fixed;
@@ -575,7 +616,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.4); /* Darker backdrop */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -583,15 +624,18 @@ body {
 }
 .modal-content {
   background-color: var(--background-color);
-  padding: 2rem;
+  padding: 1rem 0; /* Remove side padding */
   border-radius: var(--border-radius);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 500px;
   z-index: 101;
+  overflow: hidden; /* For rounded corners */
 }
 .modal-content h2 {
-  margin-top: 0;
+  margin: 0;
+  padding: 1rem 1.5rem; /* Add padding back to header */
+  font-size: 20px;
 }
 .btn-close-modal {
   background-color: var(--text-color-light);
@@ -602,7 +646,7 @@ body {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 1.5rem;
+  margin: 1.5rem 1.5rem 0.5rem 1.5rem; /* Add padding to button area */
   transition: background-color 0.2s;
 }
 .btn-close-modal:hover {
@@ -613,14 +657,17 @@ body {
 .volunteer-list {
   list-style: none;
   padding-left: 0;
-  max-height: 300px;
+  margin: 0;
+  max-height: 350px;
   overflow-y: auto;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 .volunteer-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
 }
 .volunteer-item:last-child {
@@ -634,12 +681,36 @@ body {
   font-weight: 600;
 }
 .user-list-info span {
-  color: var(--text-color-light);
   font-size: 14px;
+  color: var(--text-color-light);
 }
 .volunteer-skills {
   font-size: 0.9rem;
   color: var(--text-color-light);
   margin-top: 4px;
-  font-style: italic;
+}
+
+/* File Input Style */
+.file-input {
+  width: 100%;
+  padding: 0.75rem;
+  box-sizing: border-box; 
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f7f9f9;
+}
+.file-input::file-selector-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 9999px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: background-color 0.2s;
+}
+.file-input::file-selector-button:hover {
+  background-color: var(--primary-color-dark);
 }

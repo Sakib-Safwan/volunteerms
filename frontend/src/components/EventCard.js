@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-// NEW: Add className and onClick to props
 function EventCard({ event, showRegisterButton = true, onClick = () => {}, className = '' }) {
-  // Use the 'isRegistered' prop from the backend
+  // Use the isRegistered prop from the backend to set initial state
   const [isRegistered, setIsRegistered] = useState(event.isRegistered);
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
@@ -17,7 +16,7 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
 
   // Create the Google Maps link
   const mapLink = event.locationAddress 
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.locationAddress)}`
+    ? `https://maps.google.com/?q=${encodeURIComponent(event.locationAddress)}`
     : null;
 
   const handleRegister = async (e) => {
@@ -32,6 +31,7 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
         {}, // Empty body
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      // Success!
       setIsRegistered(true);
     } catch (err) {
       if (err.response && err.response.status === 409) {
@@ -45,35 +45,28 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
     }
   };
   
-  // Create the "friends going" text
-  let socialText = '';
-  if (event.friendsGoingCount > 0) {
-    const friendNames = event.friendsGoing || [];
-    const otherFriendsCount = event.friendsGoingCount - friendNames.length;
+  // Helper to create the social text
+  const getSocialText = () => {
+    // FIXED: Default followersGoing to an empty array if it's null or undefined
+    const followersGoing = event.followersGoing || [];
+    const count = event.followersGoingCount;
+
+    if (count === 0) {
+      return event.isRegistered ? <span>You are registered.</span> : null;
+    }
+
+    const firstFriend = followersGoing[0] || "1 person";
+    const otherCount = count - 1;
 
     if (event.isRegistered) {
-      if (friendNames.length > 0) {
-        socialText = `You, ${friendNames[0]}`;
-        if (event.friendsGoingCount > 1) {
-          socialText += ` and ${event.friendsGoingCount - 1} other friend${event.friendsGoingCount - 1 !== 1 ? 's' : ''}`;
-        }
-        socialText += ` are going.`;
-      } else {
-        socialText = `You and ${event.friendsGoingCount} friend${event.friendsGoingCount !== 1 ? 's' : ''} are going.`;
-      }
+      if (count === 1) return <span>You and <strong>{firstFriend}</strong> are registered.</span>;
+      return <span>You, <strong>{firstFriend}</strong>, and <strong>{otherCount} other {otherCount === 1 ? 'person' : 'people'} you follow</strong> are registered.</span>;
     } else {
-      if (friendNames.length > 0) {
-        socialText = `${friendNames[0]}`;
-        if (event.friendsGoingCount > 1) {
-          socialText += ` and ${event.friendsGoingCount - 1} other friend${event.friendsGoingCount - 1 !== 1 ? 's' : ''}`;
-        }
-        socialText += ` ${event.friendsGoingCount > 1 ? 'are' : 'is'} going.`;
-      } else {
-         socialText = `${event.friendsGoingCount} friend${event.friendsGoingCount !== 1 ? 's' : ''} are going.`;
-      }
+      if (count === 1) return <span><strong>{firstFriend}</strong> is registered.</span>;
+      return <span><strong>{firstFriend}</strong> and <strong>{otherCount} other {otherCount === 1 ? 'person' : 'people'} you follow</strong> are registered.</span>;
     }
-  }
-
+  };
+  const socialText = getSocialText();
 
   return (
     <article className={`event-card-tweet ${className}`} onClick={onClick}> 
@@ -84,9 +77,15 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
 
       <div className="event-card-content">
         <div className="event-card-header">
-          <div className="event-avatar"><span>📅</span></div>
+          <div className="event-avatar">
+            <img 
+              src={event.organizerProfilePicture || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${event.createdByName[0]}`}
+              alt={event.createdByName}
+              className="user-card-avatar-small"
+            />
+          </div>
           <div className="event-header-info">
-            <span className="event-organizer">by {event.createdByName || event.createdByEmail.split('@')[0]}</span>
+            <span className="event-organizer">{event.createdByName}</span>
             <span className="event-date"> • {formattedDate}</span>
           </div>
         </div>
@@ -124,6 +123,17 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
           >
             {isRegistered ? 'Registered' : (isRegistering ? 'Registering...' : 'Register Now')}
           </button>
+          {mapLink && (
+            <a
+              href={mapLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-map-link"
+              onClick={(e) => e.stopPropagation()}
+            >
+              View Map
+            </a>
+          )}
           {error && <span className="error-message-small">{error}</span>}
         </div>
       )}

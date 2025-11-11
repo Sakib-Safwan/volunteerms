@@ -7,8 +7,9 @@ import RegisterPage from './components/RegisterPage';
 import EventFeedPage from './components/EventFeedPage';
 import CreateEventPage from './components/CreateEventPage';
 import ProfilePage from './components/ProfilePage';
-import NetworkPage from './components/NetworkPage'; // Added Network
+import NetworkPage from './components/NetworkPage'; // Import NetworkPage
 import './App.css';
+// import 'leaflet/dist/leaflet.css'; // Removed for stability
 
 // This component checks if a user is logged in
 const ProtectedRoute = ({ children }) => {
@@ -40,10 +41,10 @@ function App() {
           }
         >
           {/* These are the "nested" routes that will appear in the middle column */}
-          <Route index element={<Navigate to="/home" replace />} />
+          <Route index element={<Navigate to="/home" replace />} /> {/* Default route */}
           <Route path="home" element={<DashboardPage />} />
           <Route path="events" element={<EventFeedPage />} />
-          <Route path="network" element={<NetworkPage />} />
+          <Route path="network" element={<NetworkPage />} /> {/* Add Network route */}
           <Route path="profile" element={<ProfilePage />} />
           <Route
             path="create-event"

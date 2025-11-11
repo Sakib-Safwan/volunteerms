@@ -29,7 +29,7 @@ function LeftSidebar() {
               <span className="nav-icon">📅</span> Events
             </NavLink>
           </li>
-          {/* NEW: Network Link */}
+          {/* Network Link */}
           <li className="nav-item">
             <NavLink to="/network" className="nav-pill">
               <span className="nav-icon">👥</span> Network

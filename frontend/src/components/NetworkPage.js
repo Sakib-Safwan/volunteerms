@@ -1,13 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useDebounce } from '../hooks/useDebounce';
 
-function UserCard({ user, onAddFriend, isFriend, status }) {
+// Reusable User Card component
+function UserCard({ user, onFollow }) {
+  const [isFollowed, setIsFollowed] = useState(user.isFollowed);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleFollow = async () => {
+    setIsLoading(true);
+    await onFollow(user.id, isFollowed); // Pass 'isFollowed' to know if we should follow or unfollow
+    setIsFollowed(!isFollowed);
+    setIsLoading(false);
+  };
+
   return (
     <div className="user-card">
       <img 
         src={user.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${user.name[0]}`} 
-        alt={user.name} 
+        alt={user.name}
         className="user-card-avatar"
       />
       <div className="user-card-info">
@@ -15,79 +26,78 @@ function UserCard({ user, onAddFriend, isFriend, status }) {
         <span>{user.email}</span>
         <span className="user-card-role">{user.role}</span>
       </div>
-      <button
-        className="btn btn-primary btn-add-friend"
-        onClick={() => onAddFriend(user.id)}
-        disabled={isFriend || status === 'Adding...'}
+      <button 
+        onClick={handleFollow} 
+        className={`btn-add-friend ${isFollowed ? 'followed' : ''}`}
+        disabled={isLoading}
       >
-        {isFriend ? 'Friend' : (status || 'Add Friend')}
+        {isLoading ? '...' : (isFollowed ? 'Following' : 'Follow')}
       </button>
     </div>
   );
 }
 
+
 function NetworkPage() {
   const [users, setUsers] = useState([]);
-  const [myFriends, setMyFriends] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms delay
   const token = localStorage.getItem('token');
 
-  // Memoize fetchFriends to avoid re-fetching on every render
-  const fetchFriends = useCallback(async () => {
-    try {
-      const friendsResponse = await axios.get('http://localhost:8080/friends', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMyFriends(new Set((friendsResponse.data.friends || []).map(f => f.id)));
-    } catch (err) {
-      setError('Could not fetch friends list.');
-    }
-  }, [token]);
-
-  useEffect(() => {
-    fetchFriends();
-  }, [fetchFriends]);
-
+  // Fetch users from API
   useEffect(() => {
     const fetchUsers = async () => {
+      if (!token) {
+        setError('You must be logged in.');
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:8080/users?search=${debouncedSearchTerm}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await axios.get('http://localhost:8080/users', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { search: debouncedSearchTerm } // Send debounced search term as query param
         });
         setUsers(response.data.users || []);
       } catch (err) {
-        setError('Could not fetch user data.');
+        setError('Could not fetch users list.');
       } finally {
         setLoading(false);
       }
     };
     fetchUsers();
-  }, [debouncedSearchTerm, token]);
+  }, [debouncedSearchTerm, token]); // Re-fetch when debounced term or token changes
 
-  const handleAddFriend = async (userID) => {
-    setStatus(prev => ({ ...prev, [userID]: 'Adding...' }));
+  // Follow/Unfollow handler
+  const handleFollowToggle = async (userId, isCurrentlyFollowed) => {
+    if (!token) return;
+    
+    const endpoint = isCurrentlyFollowed 
+      ? `http://localhost:8080/users/unfollow/${userId}`
+      : `http://localhost:8080/users/follow/${userId}`;
+    
     try {
       await axios.post(
-        `http://localhost:8080/friends/add/${userID}`,
-        {},
+        endpoint, 
+        {}, // Empty body
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setStatus(prev => ({ ...prev, [userID]: 'Friend' }));
-      setMyFriends(prev => new Set(prev).add(userID));
+      // If this was a "follow", we want to optimistically remove the user from the "Find People" list
+      if (!isCurrentlyFollowed) {
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+      }
     } catch (err) {
-      setStatus(prev => ({ ...prev, [userID]: 'Error' }));
+      console.error('Failed to update follow status', err);
+      // Revert state on error (optional)
     }
   };
 
   return (
     <div className="page-feed-container">
       <div className="page-feed-header">
-        <h2>Find People</h2>
+        <h2>Network</h2>
       </div>
 
       <div className="search-bar-container">
@@ -100,20 +110,21 @@ function NetworkPage() {
         />
       </div>
 
-      {loading && <div className="loading-message">Loading users...</div>}
+      {loading && <div className="loading-message">Loading...</div>}
       {error && <p className="error-message">{error}</p>}
-      
+
       <div className="user-card-grid">
-        {!loading && users.length === 0 && <p>No users found.</p>}
-        {users.map(user => (
-          <UserCard
-            key={user.id}
-            user={user}
-            onAddFriend={handleAddFriend}
-            isFriend={myFriends.has(user.id)}
-            status={status[user.id]}
-          />
-        ))}
+        {!loading && users.length === 0 ? (
+          <p className="loading-message">No users found.</p>
+        ) : (
+          users.map(user => (
+            <UserCard 
+              key={user.id} 
+              user={user} 
+              onFollow={handleFollowToggle} 
+            />
+          ))
+        )}
       </div>
     </div>
   );
