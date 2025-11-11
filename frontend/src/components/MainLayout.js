@@ -1,18 +1,19 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import LeftSidebar from './LeftSidebar';
+import Header from './Header'; // UPDATED
 import RightSidebar from './RightSidebar';
 
 function MainLayout() {
   return (
-    <div className="app-layout">
-      <LeftSidebar />
-      <main className="main-content">
-        {/* Outlet is where the nested routes (EventFeedPage, etc.) will render */}
-        <Outlet />
-      </main>
-      <RightSidebar />
-    </div>
+    <>
+      <Header /> {/* ADDED HEADER */}
+      <div className="app-layout-2-col"> {/* UPDATED CLASS */}
+        <main className="main-content">
+          <Outlet />
+        </main>
+        <RightSidebar /> {/* SIDEBAR IS NOW ON THE RIGHT */}
+      </div>
+    </>
   );
 }
 

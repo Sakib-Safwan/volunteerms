@@ -27,7 +27,7 @@ type User struct {
 	Email           string `json:"email"`
 	Role            string `json:"role"`
 	ProfileImageURL string `json:"profileImageUrl"`
-	IsFollowed      bool   `json:"isFollowed"`
+	IsFollowed      bool   `json."isFollowed"`
 }
 type Credentials struct {
 	Email    string `json:"email"`
@@ -78,8 +78,6 @@ type Group struct {
 	MemberCount     int    `json:"memberCount"`
 	IsMember        bool   `json:"isMember"`
 }
-
-// UPDATED: GroupDetails struct
 type GroupDetails struct {
 	ID                int    `json:"id"`
 	Name              string `json:"name"`
@@ -88,8 +86,19 @@ type GroupDetails struct {
 	CreatedByUserID   int    `json:"createdByUserID"`
 	Members           []User `json:"members"`
 	IsMember          bool   `json:"isMember"`
-	IsAdmin           bool   `json:"isAdmin"`           // NEW
-	HasPendingRequest bool   `json:"hasPendingRequest"` // NEW
+	IsAdmin           bool   `json:"isAdmin"`
+	HasPendingRequest bool   `json:"hasPendingRequest"`
+}
+
+// NEW: Struct for Invitations/Notifications
+type Invitation struct {
+	ID     int    `json:"id"`
+	Sender User   `json:"sender"`
+	Group  *Group `json:"group,omitempty"` // Pointer to be omittable
+	// Event *Event `json:"event,omitempty"` // For event invites later
+	InviteType string `json:"inviteType"`
+	Status     string `json:"status"`
+	CreatedAt  string `json:"createdAt"`
 }
 
 // initDB initializes the database and creates tables if they don't exist
@@ -100,7 +109,7 @@ func initDB() {
 		log.Fatal("Failed to open database:", err)
 	}
 
-	// ... (User, Event, Registration, Follows, Skills, Groups, GroupMembers tables are the same) ...
+	// ... (User, Event, Registration, Follows, Skills, Groups, GroupMembers, JoinRequests tables are the same) ...
 	createUserTable := `
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -162,8 +171,6 @@ func initDB() {
 		FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
 		FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 	);`
-
-	// NEW: Table for Group Join Requests
 	createGroupJoinRequestsTable := `
 	CREATE TABLE IF NOT EXISTS group_join_requests (
 		group_id INTEGER,
@@ -173,6 +180,20 @@ func initDB() {
 		FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 	);`
 
+	// NEW: Table for Invitations
+	createInvitationsTable := `
+	CREATE TABLE IF NOT EXISTS invitations (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		sender_id INTEGER NOT NULL,
+		receiver_id INTEGER NOT NULL,
+		invite_type TEXT NOT NULL, -- "group" or "event"
+		reference_id INTEGER NOT NULL, -- group_id or event_id
+		status TEXT NOT NULL DEFAULT "pending", -- "pending", "accepted", "declined"
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (sender_id) REFERENCES users (id) ON DELETE CASCADE,
+		FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE
+	);`
+
 	execOrFatal(db, createUserTable)
 	execOrFatal(db, createEventsTable)
 	execOrFatal(db, createRegistrationsTable)
@@ -180,7 +201,8 @@ func initDB() {
 	execOrFatal(db, createUserSkillsTable)
 	execOrFatal(db, createGroupsTable)
 	execOrFatal(db, createGroupMembersTable)
-	execOrFatal(db, createGroupJoinRequestsTable) // NEW
+	execOrFatal(db, createGroupJoinRequestsTable)
+	execOrFatal(db, createInvitationsTable) // NEW
 
 	log.Println("Database initialized successfully")
 }
@@ -216,44 +238,48 @@ func main() {
 	protected := r.Group("/")
 	protected.Use(AuthMiddleware())
 	{
-		// Event
+		// ... (Event, Dashboard, Profile, Follows routes are the same) ...
 		protected.GET("/events", GetEventsHandler)
 		protected.POST("/events", CreateEventHandler)
 		protected.POST("/events/:id/register", RegisterForEventHandler)
 		protected.GET("/events/:id/volunteers", GetVolunteersForEventHandler)
-		// Dashboard
 		protected.GET("/organizer/events", GetOrganizerEventsHandler)
 		protected.GET("/volunteer/events", GetVolunteerEventsHandler)
-		// Profile
 		protected.GET("/profile/me", GetMyProfileHandler)
 		protected.GET("/profile/skills", GetSkillsHandler)
 		protected.POST("/profile/skills", UpdateSkillsHandler)
 		protected.POST("/profile/picture", UploadProfilePictureHandler)
-		// Follows
 		protected.GET("/users", GetUsersHandler)
 		protected.GET("/users/following", GetFollowingHandler)
 		protected.GET("/users/followers", GetFollowersHandler)
 		protected.POST("/users/follow/:id", FollowUserHandler)
 		protected.POST("/users/unfollow/:id", UnfollowUserHandler)
+
 		// Groups
-		protected.GET("/groups", GetGroupsHandler)
+		protected.GET("/groups", GetGroupsHandler) // Updated for search
 		protected.POST("/groups", CreateGroupHandler)
 		protected.GET("/groups/:id", GetGroupDetailsHandler)
 		protected.POST("/groups/:id/leave", LeaveGroupHandler)
 		protected.GET("/profile/my-groups", GetMyGroupsHandler)
-
-		// NEW: Group Join Request Routes
+		// Group Join Requests
 		protected.POST("/groups/:id/request-join", RequestJoinGroupHandler)
 		protected.POST("/groups/:id/cancel-request", CancelJoinRequestHandler)
-		protected.GET("/groups/:id/requests", GetJoinRequestsHandler)             // Admin
-		protected.POST("/groups/:id/requests/approve", ApproveJoinRequestHandler) // Admin
-		protected.POST("/groups/:id/requests/deny", DenyJoinRequestHandler)       // Admin
+		protected.GET("/groups/:id/requests", GetJoinRequestsHandler)
+		protected.POST("/groups/:id/requests/approve", ApproveJoinRequestHandler)
+		protected.POST("/groups/:id/requests/deny", DenyJoinRequestHandler)
+
+		// NEW: Invitation Routes
+		protected.GET("/groups/:id/invitable-followers", GetInvitableFollowersHandler)
+		protected.POST("/groups/:id/invite", CreateGroupInvitationHandler)
+		protected.GET("/notifications", GetNotificationsHandler)
+		protected.POST("/notifications/:id/accept", AcceptInvitationHandler)
+		protected.POST("/notifications/:id/decline", DeclineInvitationHandler)
 	}
 
 	r.Run(":8080")
 }
 
-// --- Middleware ---
+// --- Middleware (Unchanged) ---
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -267,9 +293,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
-		})
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) { return jwtKey, nil })
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			return
@@ -944,15 +968,26 @@ func CreateGroupHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"id": newGroupID, "name": name})
 }
 
+// UPDATED: GetGroupsHandler (with Search)
 func GetGroupsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
+	searchTerm := c.Query("search") // NEW: Get search term
+
+	var args []interface{}
+	args = append(args, userID)
+
 	query := `
 		SELECT g.id, g.name, g.description, g.profile_image_url, g.created_by_user_id,
 		       (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as memberCount,
 		       (SELECT 1 FROM group_members gm WHERE gm.group_id = g.id AND gm.user_id = ?) as isMember
 		FROM groups g
 	`
-	rows, err := db.Query(query, userID)
+	if searchTerm != "" {
+		query += " WHERE g.name LIKE ?"
+		args = append(args, "%"+searchTerm+"%")
+	}
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		log.Println("GetGroups error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -973,7 +1008,6 @@ func GetGroupsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"groups": groups})
 }
 
-// UPDATED: GetGroupDetailsHandler
 func GetGroupDetailsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
 	groupIDStr := c.Param("id")
@@ -982,7 +1016,6 @@ func GetGroupDetailsHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
 		return
 	}
-
 	var g GroupDetails
 	query := `SELECT id, name, description, profile_image_url, created_by_user_id FROM groups WHERE id = ?`
 	err = db.QueryRow(query, groupID).Scan(&g.ID, &g.Name, &g.Description, &g.ProfileImageURL, &g.CreatedByUserID)
@@ -991,7 +1024,6 @@ func GetGroupDetailsHandler(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
 	}
-
 	memberQuery := `
 		SELECT u.id, u.name, u.email, u.role, u.profile_image_url
 		FROM users u
@@ -1014,24 +1046,19 @@ func GetGroupDetailsHandler(c *gin.Context) {
 		}
 		g.Members = append(g.Members, u)
 	}
-
-	// Check IsMember, IsAdmin, HasPendingRequest in separate, clearer queries
 	var userRole sql.NullString
 	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&userRole)
 	if err == nil {
 		g.IsMember = true
 		g.IsAdmin = (userRole.String == "admin")
 	}
-
 	var requestCount int
 	err = db.QueryRow(`SELECT COUNT(*) FROM group_join_requests WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&requestCount)
 	if err == nil && requestCount > 0 {
 		g.HasPendingRequest = true
 	}
-
 	c.JSON(http.StatusOK, g)
 }
-
 func LeaveGroupHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
 	groupIDStr := c.Param("id")
@@ -1093,8 +1120,7 @@ func GetMyGroupsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"groups": groups})
 }
 
-// --- NEW: Group Join Request Handlers ---
-
+// --- Group Join Request Handlers ---
 func RequestJoinGroupHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
 	groupIDStr := c.Param("id")
@@ -1143,7 +1169,6 @@ func GetJoinRequestsHandler(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not an admin of this group"})
 		return
 	}
-
 	query := `
 		SELECT u.id, u.name, u.email, u.profile_image_url 
 		FROM users u
@@ -1157,7 +1182,6 @@ func GetJoinRequestsHandler(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-
 	requests := []User{}
 	for rows.Next() {
 		var u User
@@ -1169,8 +1193,6 @@ func GetJoinRequestsHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"requests": requests})
 }
-
-// ApproveJoinRequestHandler (requires request body)
 func ApproveJoinRequestHandler(c *gin.Context) {
 	myUserID := c.GetInt("userID")
 	groupIDStr := c.Param("id")
@@ -1186,21 +1208,18 @@ func ApproveJoinRequestHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID in request"})
 		return
 	}
-
 	var myRole string
 	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, myUserID).Scan(&myRole)
 	if err != nil || myRole != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not an admin of this group"})
 		return
 	}
-
 	tx, err := db.Begin()
 	if err != nil {
 		log.Println("ApproveJoin (tx begin) error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-
 	_, err = tx.Exec(`DELETE FROM group_join_requests WHERE group_id = ? AND user_id = ?`, groupID, payload.UserID)
 	if err != nil {
 		tx.Rollback()
@@ -1208,25 +1227,20 @@ func ApproveJoinRequestHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-
-	_, err = tx.Exec(`INSERT OR IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)`, groupID, payload.UserID, "member")
+	_, err = tx.Exec(`INSERT OR IGGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)`, groupID, payload.UserID, "member")
 	if err != nil {
 		tx.Rollback()
 		log.Println("ApproveJoin (insert) error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-
 	if err := tx.Commit(); err != nil {
 		log.Println("ApproveJoin (commit) error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "User approved and added to group"})
 }
-
-// DenyJoinRequestHandler (requires request body)
 func DenyJoinRequestHandler(c *gin.Context) {
 	myUserID := c.GetInt("userID")
 	groupIDStr := c.Param("id")
@@ -1242,14 +1256,12 @@ func DenyJoinRequestHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID in request"})
 		return
 	}
-
 	var myRole string
 	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, myUserID).Scan(&myRole)
 	if err != nil || myRole != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not an admin of this group"})
 		return
 	}
-
 	query := `DELETE FROM group_join_requests WHERE group_id = ? AND user_id = ?`
 	_, err = db.Exec(query, groupID, payload.UserID)
 	if err != nil {
@@ -1257,8 +1269,232 @@ func DenyJoinRequestHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "User request denied"})
+}
+
+// --- NEW: Invitation Handlers ---
+
+func GetInvitableFollowersHandler(c *gin.Context) {
+	myID := c.GetInt("userID")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+
+	// Find users I follow who are NOT already members, have NOT requested to join, and have NOT been invited
+	query := `
+		SELECT u.id, u.name, u.email, u.profile_image_url
+		FROM users u
+		JOIN follows f ON u.id = f.following_id
+		WHERE f.follower_id = ?
+		AND u.id NOT IN (
+			SELECT user_id FROM group_members WHERE group_id = ?
+		)
+		AND u.id NOT IN (
+			SELECT user_id FROM group_join_requests WHERE group_id = ?
+		)
+		AND u.id NOT IN (
+			SELECT receiver_id FROM invitations WHERE group_id = ? AND status = 'pending'
+		)
+	`
+	rows, err := db.Query(query, myID, groupID, groupID, groupID)
+	if err != nil {
+		log.Println("GetInvitableFollowers error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer rows.Close()
+
+	users := []User{}
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.ProfileImageURL); err != nil {
+			log.Println("GetInvitableFollowers scan error:", err)
+			continue
+		}
+		users = append(users, u)
+	}
+	c.JSON(http.StatusOK, gin.H{"users": users})
+}
+
+func CreateGroupInvitationHandler(c *gin.Context) {
+	myID := c.GetInt("userID")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	var payload struct {
+		ReceiverID int `json:"receiverId"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid receiver ID"})
+		return
+	}
+
+	// Check if sender is a member (V1: any member can invite)
+	var isMember int
+	err = db.QueryRow(`SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, myID).Scan(&isMember)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not a member of this group"})
+		return
+	}
+
+	// Create invitation
+	query := `
+		INSERT INTO invitations (sender_id, receiver_id, invite_type, reference_id, status) 
+		VALUES (?, ?, 'group', ?, 'pending')
+	`
+	_, err = db.Exec(query, myID, payload.ReceiverID, groupID)
+	if err != nil {
+		log.Println("CreateGroupInvitation error:", err)
+		c.JSON(http.StatusConflict, gin.H{"error": "Invitation already sent or user is already a member"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Invitation sent"})
+}
+
+func GetNotificationsHandler(c *gin.Context) {
+	myID := c.GetInt("userID")
+
+	// Get all pending invitations for the current user
+	query := `
+		SELECT i.id, i.invite_type, i.status, i.created_at, i.reference_id,
+		       s.id, s.name, s.email, s.profile_image_url
+		FROM invitations i
+		JOIN users s ON i.sender_id = s.id
+		WHERE i.receiver_id = ? AND i.status = 'pending'
+		ORDER BY i.created_at DESC
+	`
+	rows, err := db.Query(query, myID)
+	if err != nil {
+		log.Println("GetNotifications error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer rows.Close()
+
+	notifications := []Invitation{}
+	for rows.Next() {
+		var inv Invitation
+		var groupID sql.NullInt64 // Use sql.Null types for failable joins
+
+		if err := rows.Scan(&inv.ID, &inv.InviteType, &inv.Status, &inv.CreatedAt, &groupID,
+			&inv.Sender.ID, &inv.Sender.Name, &inv.Sender.Email, &inv.Sender.ProfileImageURL); err != nil {
+			log.Println("GetNotifications scan error:", err)
+			continue
+		}
+
+		// If it's a group invite, fetch group details
+		if inv.InviteType == "group" && groupID.Valid {
+			var g Group
+			gQuery := `
+				SELECT id, name, description, profile_image_url 
+				FROM groups WHERE id = ?
+			`
+			err = db.QueryRow(gQuery, groupID.Int64).Scan(&g.ID, &g.Name, &g.Description, &g.ProfileImageURL)
+			if err == nil {
+				inv.Group = &g // Attach group object
+			}
+		}
+		// TODO: Add case for "event" invites
+
+		notifications = append(notifications, inv)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"notifications": notifications})
+}
+
+func AcceptInvitationHandler(c *gin.Context) {
+	myID := c.GetInt("userID")
+	notifIDStr := c.Param("id")
+	notifID, err := strconv.Atoi(notifIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid notification ID"})
+		return
+	}
+
+	// 1. Get invitation details
+	var inviteType string
+	var refID int
+	var receiverID int
+	query := `SELECT invite_type, reference_id, receiver_id FROM invitations WHERE id = ? AND status = 'pending'`
+	err = db.QueryRow(query, notifID).Scan(&inviteType, &refID, &receiverID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Invitation not found or already handled"})
+		return
+	}
+
+	if receiverID != myID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "This is not your invitation"})
+		return
+	}
+
+	// 2. Start transaction
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println("AcceptInvite (tx begin) error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	// 3. Update invitation status
+	_, err = tx.Exec(`UPDATE invitations SET status = 'accepted' WHERE id = ?`, notifID)
+	if err != nil {
+		tx.Rollback()
+		log.Println("AcceptInvite (update) error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	// 4. Perform action based on type
+	if inviteType == "group" {
+		_, err = tx.Exec(`INSERT OR IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)`, refID, myID, "member")
+		if err != nil {
+			tx.Rollback()
+			log.Println("AcceptInvite (insert member) error:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+	}
+	// TODO: Add case for "event" invites (e.g., auto-register)
+
+	if err := tx.Commit(); err != nil {
+		log.Println("AcceptInvite (commit) error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Invitation accepted"})
+}
+
+func DeclineInvitationHandler(c *gin.Context) {
+	myID := c.GetInt("userID")
+	notifIDStr := c.Param("id")
+	notifID, err := strconv.Atoi(notifIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid notification ID"})
+		return
+	}
+
+	query := `UPDATE invitations SET status = 'declined' WHERE id = ? AND receiver_id = ? AND status = 'pending'`
+	res, err := db.Exec(query, notifID, myID)
+	if err != nil {
+		log.Println("DeclineInvite error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Invitation not found or already handled"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Invitation declined"})
 }
 
 // SeedDatabaseHandler

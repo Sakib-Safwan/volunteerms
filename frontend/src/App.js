@@ -11,7 +11,7 @@ import NetworkPage from './components/NetworkPage';
 import LandingPage from './components/LandingPage';
 import GroupsPage from './components/GroupsPage';
 import GroupDetailsPage from './components/GroupDetailsPage';
-import NotificationsPage from './components/NotificationsPage'; // NEW
+import NotificationsPage from './components/NotificationsPage';
 import './App.css';
 
 /**
@@ -19,7 +19,8 @@ import './App.css';
  */
 const ProtectedRoute = () => {
   const token = localStorage.getItem('token');
-  return token ? <MainLayout><Outlet /></MainLayout> : <Navigate to="/" replace />; 
+  // UPDATED: Now renders MainLayout which contains the <Outlet />
+  return token ? <MainLayout /> : <Navigate to="/" replace />; 
 };
 
 /**
@@ -58,6 +59,10 @@ function App() {
         />
 
         {/* --- Protected App Routes --- */}
+        {/* UPDATED: This structure is now simpler.
+            ProtectedRoute renders MainLayout, and MainLayout renders the <Outlet/>
+            which contains all these child routes.
+         */}
         <Route element={<ProtectedRoute />}>
           <Route path="/home" element={<DashboardPage />} />
           <Route path="/events" element={<EventFeedPage />} />
@@ -65,7 +70,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/groups" element={<GroupsPage />} />
           <Route path="/groups/:id" element={<GroupDetailsPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} /> {/* NEW */}
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route
             path="/create-event"
             element={

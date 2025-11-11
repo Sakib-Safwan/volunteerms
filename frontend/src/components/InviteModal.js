@@ -5,7 +5,7 @@ function InviteModal({ group, onClose }) {
   const [followers, setFollowers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [invitedUserIds, setInvitedUserIds] = useState(new Set()); // Tracks who has been invited
+  const [invitedUsers, setInvitedUsers] = useState([]); // Tracks who has been invited
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -17,7 +17,7 @@ function InviteModal({ group, onClose }) {
         );
         setFollowers(res.data.users || []);
       } catch (err) {
-        setError('Could not fetch followers list.');
+        setError('Could not load followers.');
       } finally {
         setLoading(false);
       }
@@ -32,11 +32,10 @@ function InviteModal({ group, onClose }) {
         { receiverId: receiverId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Add user to the "invited" set to change their button
-      setInvitedUserIds(prev => new Set(prev).add(receiverId));
+      setInvitedUsers([...invitedUsers, receiverId]); // Mark as invited
     } catch (err) {
       console.error("Failed to send invite", err);
-      alert("Failed to send invite. They may already be a member or have a pending request.");
+      alert("Failed to send invite. User may already be a member or have a pending request.");
     }
   };
 
@@ -44,16 +43,18 @@ function InviteModal({ group, onClose }) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <h2>Invite Followers to "{group.name}"</h2>
-        
-        {loading && <p>Loading followers...</p>}
+
+        {loading && <p className="loading-message">Loading followers...</p>}
         {error && <p className="error-message">{error}</p>}
-        
-        {!loading && followers.length === 0 ? (
-          <p>You have no followers to invite (or they are all already members).</p>
-        ) : (
-          <ul className="volunteer-list">
-            {followers.map((user) => {
-              const hasBeenInvited = invitedUserIds.has(user.id);
+
+        <ul className="volunteer-list">
+          {!loading && followers.length === 0 ? (
+            <p className="loading-message" style={{padding: '1rem'}}>
+              No followers available to invite.
+            </p>
+          ) : (
+            followers.map(user => {
+              const isInvited = invitedUsers.includes(user.id);
               return (
                 <li key={user.id} className="volunteer-item">
                   <img 
@@ -67,18 +68,19 @@ function InviteModal({ group, onClose }) {
                   </div>
                   <div className="request-actions">
                     <button 
-                      className="btn-approve" 
+                      className={`btn-follow ${isInvited ? 'following' : ''}`}
+                      style={{width: '90px'}}
                       onClick={() => handleInvite(user.id)}
-                      disabled={hasBeenInvited}
+                      disabled={isInvited}
                     >
-                      {hasBeenInvited ? 'Invited' : 'Invite'}
+                      {isInvited ? 'Invited' : 'Invite'}
                     </button>
                   </div>
                 </li>
               );
-            })}
-          </ul>
-        )}
+            })
+          )}
+        </ul>
         
         <button className="btn-close-modal" onClick={onClose}>
           Done

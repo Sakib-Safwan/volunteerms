@@ -82,6 +82,7 @@ function GroupDetailsPage() {
     }
   };
 
+  // UseEffects (one for base details, one for admin requests)
   useEffect(() => {
     fetchGroupDetails();
   }, [id, token]);
@@ -90,7 +91,7 @@ function GroupDetailsPage() {
     if (isAdmin) {
       fetchJoinRequests();
     }
-  }, [isAdmin, id, token]);
+  }, [isAdmin, id, token]); // Runs when isAdmin state is set
 
 
   // --- Button Handlers ---

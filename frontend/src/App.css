@@ -27,88 +27,135 @@ body {
   line-height: 1.5;
 }
 
-/* --- Twitter 3-Column Layout --- */
-.app-layout {
-  display: grid;
-  grid-template-columns: minmax(68px, 275px) minmax(0, 1fr) minmax(300px, 350px);
+/* --- NEW: Header Bar --- */
+.header-container {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-color);
+  height: 53px;
+}
+.header-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   max-width: 1265px;
+  height: 100%;
   margin: 0 auto;
+  padding: 0 16px;
+}
+.header-left {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+}
+.header-center {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  height: 100%;
+}
+.header-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+.header-brand-logo {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+.header-nav-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-color-light);
+  height: 100%;
+  padding: 0 16px;
+  min-width: 56px;
+  transition: background-color 0.2s;
+  border-bottom: 2px solid transparent;
+}
+.header-nav-pill:hover {
+  background-color: #e7e7e8;
+}
+.header-nav-pill.active {
+  color: var(--text-color);
+  font-weight: 700;
+  border-bottom-color: var(--primary-color);
+}
+.header-nav-pill .nav-icon {
+  font-size: 24px;
+  margin: 0;
 }
 
+/* Right-side icons */
+.header-nav-pill-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-color);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+.header-nav-pill-icon:hover {
+  background-color: #e7e7e8;
+}
+.header-profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.btn-logout-header {
+  background-color: var(--text-color);
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.btn-logout-header:hover {
+  opacity: 0.8;
+}
+
+
+/* --- NEW: 2-Column Layout --- */
+.app-layout-2-col {
+  display: grid;
+  /* Main feed and sidebar */
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
+  max-width: 990px; /* Centered content area */
+  margin: 0 auto;
+  gap: 30px;
+  padding: 0 16px;
+}
 .main-content {
   border-left: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   min-height: 100vh;
-  min-width: 600px; /* Prevents content from being crushed */
+  /* remove min-width from 3-col layout */
 }
-
-.left-sidebar,
 .right-sidebar {
-  padding: 0 12px;
+  padding: 0; /* Remove padding */
 }
-
 .sidebar-sticky-content {
   position: sticky;
-  top: 0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* --- Left Sidebar (Navigation) --- */
-.left-sidebar {
-  padding: 0 12px;
-}
-.nav-brand-logo {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--primary-color);
-  padding: 12px;
-  margin-bottom: 12px;
-}
-.nav-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.nav-pill {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  font-size: 20px;
-  font-weight: 500;
-  text-decoration: none;
-  color: var(--text-color);
-  border-radius: 9999px; /* Pill shape */
-  transition: background-color 0.2s;
-  margin-bottom: 8px;
-}
-.nav-pill:hover {
-  background-color: #e7e7e8;
-}
-.nav-pill.active {
-  font-weight: 700;
-  color: var(--text-color);
-}
-.nav-icon {
-  font-size: 24px;
-  margin-right: 20px;
-}
-.btn-logout {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 9999px;
-  padding: 14px 0;
-  font-size: 17px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: auto; /* Pushes to the bottom */
-  margin-bottom: 20px;
-  transition: background-color 0.2s;
-}
-.btn-logout:hover {
-  background-color: var(--primary-color-dark);
+  top: 70px; /* Below the 53px header + 17px padding */
+  height: auto; /* Remove 100vh */
+  padding-top: 17px;
 }
 
 /* --- Right Sidebar (Widgets) --- */
@@ -116,10 +163,12 @@ body {
   background-color: #f7f9f9;
   border-radius: var(--border-radius);
   padding: 12px 16px;
-  margin-top: 16px;
+  margin-top: 0; /* Remove top margin */
+  margin-bottom: 16px; /* Add bottom margin */
 }
 .widget-card h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
+  font-size: 18px;
 }
 .widget-card p {
   font-size: 14px;
@@ -142,6 +191,43 @@ body {
   font-size: 14px;
   color: var(--text-color-light);
 }
+.suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-follow-sidebar {
+  background-color: var(--text-color);
+  color: white;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.btn-follow-sidebar:hover {
+  opacity: 0.8;
+}
+.widget-show-more {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 12px;
+  display: inline-block;
+}
+.widget-show-more:hover {
+  text-decoration: underline;
+}
+
 
 /* --- Main Feed Column --- */
 .page-feed-container {
@@ -149,7 +235,7 @@ body {
 }
 .page-feed-header {
   position: sticky;
-  top: 0;
+  top: 53px; /* Stick below the main header */
   background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
   padding: 16px;
@@ -465,7 +551,7 @@ body {
   color: var(--primary-color) !important;
   text-transform: uppercase;
 }
-.btn-follow { /* Renamed from btn-add-friend */
+.btn-follow {
   background-color: var(--text-color);
   color: white;
   border: 1px solid var(--text-color);
@@ -478,14 +564,14 @@ body {
   transition: all 0.2s;
   width: 100px;
   box-sizing: border-box;
-  margin-left: auto; /* FIX: Pushes button to the right */
+  margin-left: auto;
 }
 .btn-follow.following {
   background-color: transparent;
   color: var(--text-color);
 }
 .btn-follow.following:hover {
-  background-color: rgba(220, 53, 69, 0.1); /* Red hover */
+  background-color: rgba(220, 53, 69, 0.1);
   border-color: var(--error-color);
   color: var(--error-color);
 }
@@ -550,10 +636,7 @@ body {
   color: var(--text-color);
   border-bottom-color: var(--primary-color);
 }
-
-.profile-tab-content {
-  /* No styles needed, content is inside */
-}
+.profile-tab-content {}
 .user-card-grid-condensed {
   display: grid;
   grid-template-columns: 1fr;
@@ -683,8 +766,8 @@ body {
 .user-list-info {
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Grow to fill space */
-  min-width: 0; /* Prevent overflow */
+  flex-grow: 1;
+  min-width: 0;
 }
 .user-list-info strong {
   font-weight: 600;
@@ -724,7 +807,7 @@ body {
   background-color: var(--primary-color-dark);
 }
 
-/* --- Styles for Group Details Page (Modified & New) --- */
+/* --- Group Details Page --- */
 .btn-join-group-pending {
   background-color: transparent;
   color: var(--text-color);
@@ -735,7 +818,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  width: 140px; /* A bit wider */
+  width: 140px;
   margin-top: -30px;
   z-index: 2;
   background-color: white;
@@ -746,7 +829,7 @@ body {
 .request-actions {
   display: flex;
   gap: 0.5rem;
-  margin-left: auto; /* Push to the right */
+  margin-left: auto;
   flex-shrink: 0;
 }
 .btn-approve, .btn-deny {
@@ -759,11 +842,11 @@ body {
   transition: opacity 0.2s;
 }
 .btn-approve {
-  background-color: var(--success-color); /* Green */
+  background-color: var(--success-color);
   color: white;
 }
 .btn-deny {
-  background-color: var(--error-color); /* Red */
+  background-color: var(--error-color);
   color: white;
 }
 .btn-approve:hover, .btn-deny:hover {
@@ -781,7 +864,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
-  width: auto; /* Not full width */
+  width: auto;
 }
 .btn-create-group:hover {
   background-color: var(--primary-color-dark);
@@ -894,7 +977,6 @@ body {
 .btn-leave-group:hover {
   background-color: rgba(220, 53, 69, 0.1);
 }
-/* New Invite Button */
 .btn-invite {
   background-color: var(--text-color);
   color: white;
@@ -913,8 +995,6 @@ body {
 .btn-invite:hover {
   opacity: 0.8;
 }
-
-
 .group-details-info h2 {
   font-size: 24px;
   font-weight: 700;
@@ -934,7 +1014,6 @@ body {
   padding: 0 1.5rem 0.5rem 1.5rem;
   margin: 0;
 }
-
 .admin-badge {
   margin-left: auto;
   font-size: 13px;

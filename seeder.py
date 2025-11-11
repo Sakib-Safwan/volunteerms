@@ -7,10 +7,11 @@ import datetime
 from datetime import timedelta
 
 # --- Configuration ---
-NUM_VOLUNTEERS = 50
+NUM_VOLUNTEERS = 50 # We will create 48 random + 2 custom
 NUM_ORGANIZERS = 5
 NUM_EVENTS = 20
-NUM_GROUPS = 10 # NEW
+NUM_GROUPS = 10
+NUM_INVITATIONS = 30
 DB_PATH = os.path.join('backend', 'vms.db')
 DEFAULT_PASSWORD = "pass123"
 
@@ -27,6 +28,7 @@ db = None
 all_user_ids = []
 organizer_ids = []
 volunteer_ids = []
+group_ids = []
 
 def hash_password(password):
     """Hashes a password using bcrypt, compatible with Go's DefaultCost."""
@@ -40,13 +42,23 @@ def create_users(cursor):
     print(f"Creating {NUM_VOLUNTEERS} volunteers and {NUM_ORGANIZERS} organizers...")
     users = []
     
-    for _ in range(NUM_VOLUNTEERS):
+    # --- Create Custom Users ---
+    custom_users = [
+        ("Volunteer 1", "vol1@vol.com", hash_password("1234"), "Volunteer", "https://placehold.co/100x100/E8F5FF/1D9BF0?text=V"),
+        ("Volunteer 2", "vol2@vol.com", hash_password("1234"), "Volunteer", "https://placehold.co/100x100/E8F5FF/1D9BF0?text=V"),
+    ]
+    users.extend(custom_users)
+    print("Added 2 custom volunteers: vol1@vol.com and vol2@vol.com")
+
+    # Create Random Volunteers
+    for _ in range(NUM_VOLUNTEERS - 2): # Subtract the 2 we just added
         full_name = fake.name()
         email = fake.unique.email()
         hashed_pass = hash_password(DEFAULT_PASSWORD)
         pfp_url = f"https://placehold.co/100x100/E8F5FF/1D9BF0?text={full_name[0]}"
         users.append((full_name, email, hashed_pass, "Volunteer", pfp_url))
 
+    # Create Organizers
     for _ in range(NUM_ORGANIZERS):
         full_name = fake.name()
         email = fake.unique.email()
@@ -134,6 +146,21 @@ def create_follows(cursor):
         return
 
     follows = []
+    
+    # --- Add Custom Follows ---
+    try:
+        cursor.execute("SELECT id FROM users WHERE email = 'vol1@vol.com'")
+        vol1_id = cursor.fetchone()[0]
+        cursor.execute("SELECT id FROM users WHERE email = 'vol2@vol.com'")
+        vol2_id = cursor.fetchone()[0]
+        
+        follows.append((vol1_id, vol2_id))
+        follows.append((vol2_id, vol1_id))
+        print("Added custom follows between vol1 and vol2.")
+    except Exception as e:
+        print(f"Could not add custom follows: {e}")
+        
+    # --- Add Random Follows ---
     for user_id_a in all_user_ids:
         num_follows = random.randint(0, 10)
         potential_follows = [uid for uid in all_user_ids if uid != user_id_a]
@@ -165,9 +192,9 @@ def create_skills(cursor):
     except Exception as e:
         print(f"Error assigning skills: {e}")
 
-# NEW: Function to create groups
 def create_groups(cursor):
     """Creates random groups and adds members."""
+    global group_ids
     print(f"Creating {NUM_GROUPS} groups...")
     if not all_user_ids:
         print("No users to create groups.")
@@ -206,7 +233,6 @@ def create_groups(cursor):
         num_members = random.randint(2, 15)
         members = random.sample(all_user_ids, num_members)
         for user_id in members:
-            # Add as "member"
             group_memberships.append((group_id, user_id, "member"))
             
     try:
@@ -218,6 +244,36 @@ def create_groups(cursor):
     except Exception as e:
         print(f"Error adding group members: {e}")
 
+def create_invitations(cursor):
+    """Creates random pending group invitations."""
+    print(f"Creating {NUM_INVITATIONS} group invitations...")
+    if not all_user_ids or not group_ids:
+        print("No users or groups to create invitations.")
+        return
+
+    invitations = []
+    for _ in range(NUM_INVITATIONS):
+        sender_id = random.choice(all_user_ids)
+        receiver_id = random.choice(all_user_ids)
+        group_id = random.choice(group_ids)
+        
+        # Ensure sender/receiver are different
+        if sender_id == receiver_id:
+            continue
+            
+        invitations.append((sender_id, receiver_id, 'group', group_id, 'pending'))
+
+    try:
+        # INSERT OR IGNORE to avoid duplicates
+        cursor.executemany(
+            "INSERT OR IGNORE INTO invitations (sender_id, receiver_id, invite_type, reference_id, status) VALUES (?, ?, ?, ?, ?)",
+            invitations
+        )
+        print("Invitations created successfully.")
+    except Exception as e:
+        print(f"Error creating invitations: {e}")
+
+
 def main():
     print(f"Connecting to database at {DB_PATH}...")
     try:
@@ -225,22 +281,29 @@ def main():
         cursor = db.cursor()
         
         print("Clearing old data...")
+        # Clear tables in the correct order (child tables first)
+        # FIXED: Replaced all tab indentation with 4 spaces
         cursor.execute("DELETE FROM user_skills")
         cursor.execute("DELETE FROM follows")
         cursor.execute("DELETE FROM registrations")
-        cursor.execute("DELETE FROM group_members") # NEW
-        cursor.execute("DELETE FROM groups")       # NEW
+        cursor.execute("DELETE FROM group_join_requests")
+        cursor.execute("DELETE FROM invitations")
+        cursor.execute("DELETE FROM group_members")
+        cursor.execute("DELETE FROM groups")
         cursor.execute("DELETE FROM events")
         cursor.execute("DELETE FROM users")
         
+        # Reset auto-increment counters
         cursor.execute("DELETE FROM sqlite_sequence")
         
+        # Run seeding functions
         create_users(cursor)
         create_events(cursor)
         create_registrations(cursor)
         create_follows(cursor)
         create_skills(cursor)
-        create_groups(cursor) # NEW
+        create_groups(cursor)
+        create_invitations(cursor)
 
         db.commit()
         print("\nDatabase successfully seeded with random data!")

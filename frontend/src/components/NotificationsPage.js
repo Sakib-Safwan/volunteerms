@@ -2,40 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
-// This is the card for a single invitation
-function InvitationCard({ notification, onAction }) {
-  const { id, sender, group } = notification;
-
-  const handleAccept = () => {
-    onAction(id, 'accept');
-  };
-
-  const handleDecline = () => {
-    onAction(id, 'decline');
-  };
-
-  return (
-    <div className="notification-card">
-      <img 
-        src={sender.profileImageUrl} 
-        alt={sender.name} 
-        className="user-card-avatar-small"
-      />
-      <div className="notification-info">
-        <p>
-          <strong>{sender.name}</strong> invited you to join the group: 
-          <Link to={`/groups/${group.id}`} className="notification-link"> {group.name}</Link>
-        </p>
-      </div>
-      <div className="request-actions">
-        <button className="btn-approve" onClick={handleAccept}>Accept</button>
-        <button className="btn-deny" onClick={handleDecline}>Decline</button>
-      </div>
-    </div>
-  );
-}
-
-// This is the main page
 function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +17,7 @@ function NotificationsPage() {
       setNotifications(res.data.notifications || []);
     } catch (err) {
       setError('Could not fetch notifications.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -60,17 +27,27 @@ function NotificationsPage() {
     fetchNotifications();
   }, [token]);
 
-  const handleAction = async (id, action) => {
+  const handleAccept = async (id) => {
     try {
-      // Send the request to accept or decline
-      await axios.post(`http://localhost:8080/notifications/${id}/${action}`, {}, {
+      await axios.post(`http://localhost:8080/notifications/${id}/accept`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Remove the notification from the list
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      // Refresh list after action
+      fetchNotifications();
     } catch (err) {
-      console.error(`Failed to ${action} invitation`, err);
-      alert(`Error: Could not ${action} invitation.`);
+      console.error("Failed to accept invite", err);
+    }
+  };
+
+  const handleDecline = async (id) => {
+    try {
+      await axios.post(`http://localhost:8080/notifications/${id}/decline`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh list after action
+      fetchNotifications();
+    } catch (err) {
+      console.error("Failed to decline invite", err);
     }
   };
 
@@ -88,11 +65,23 @@ function NotificationsPage() {
           <p className="loading-message">You have no new notifications.</p>
         ) : (
           notifications.map(notif => (
-            <InvitationCard 
-              key={notif.id} 
-              notification={notif} 
-              onAction={handleAction} 
-            />
+            <div key={notif.id} className="notification-card">
+              <img 
+                src={notif.sender.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${notif.sender.name[0]}`}
+                alt={notif.sender.name}
+                className="user-card-avatar-small"
+              />
+              <div className="notification-info">
+                <strong>{notif.sender.name}</strong> invited you to join the group 
+                <Link to={`/groups/${notif.group.id}`} className="notification-link">
+                  <strong> {notif.group.name}</strong>
+                </Link>.
+              </div>
+              <div className="request-actions">
+                <button className="btn-approve" onClick={() => handleAccept(notif.id)}>Accept</button>
+                <button className="btn-deny" onClick={() => handleDecline(notif.id)}>Decline</button>
+              </div>
+            </div>
           ))
         )}
       </div>
