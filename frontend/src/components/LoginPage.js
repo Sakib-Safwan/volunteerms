@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
-function LoginPage() {
+// NEW: Pass in props to update the app's state
+function LoginPage({ setIsLoggedIn, setUserRole }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,11 +19,16 @@ function LoginPage() {
         password: password,
       });
 
+      // Store token and role
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('role', response.data.role);
       
-      // We'll redirect to a dashboard later
-      navigate('/'); 
+      // NEW: Update the parent app state
+      setIsLoggedIn(true);
+      setUserRole(response.data.role);
+
+      // Redirect to the main event feed
+      navigate('/events'); 
 
     } catch (err) {
       if (err.response) {

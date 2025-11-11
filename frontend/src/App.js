@@ -1,31 +1,56 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import MainLayout from './components/MainLayout'; // NEW: Our Twitter-like layout
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
-import './App.css'; // We will add styles here
+import EventFeedPage from './components/EventFeedPage';
+import CreateEventPage from './components/CreateEventPage';
+import './App.css';
+
+// This component checks if a user is logged in
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" replace />;
+};
+
+// This component checks if a user is an Organizer
+const OrganizerRoute = ({ children }) => {
+  const userRole = localStorage.getItem('role');
+  return userRole === 'Organizer' ? children : <Navigate to="/events" replace />;
+};
 
 function App() {
   return (
     <BrowserRouter>
-      <div>
-        <nav className="navbar">
-          <Link to="/" className="nav-brand">VMS</Link>
-          <div className="nav-links">
-            <Link to="/login" className="nav-link">Login</Link>
-            <Link to="/register" className="nav-link">Register</Link>
-          </div>
-        </nav>
+      <Routes>
+        {/* Routes WITHOUT the 3-column layout */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-        {/* Define the routes */}
-        <div className="container">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-          </Routes>
-        </div>
-      </div>
+        {/* Routes WITH the 3-column layout */}
+        <Route
+          path="/*" // Any other route will use MainLayout
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* These are the "nested" routes that will appear in the middle column */}
+          <Route index element={<Navigate to="/events" replace />} /> {/* Default route */}
+          <Route path="home" element={<LandingPage />} /> {/* Switched to /home */}
+          <Route path="events" element={<EventFeedPage />} />
+          <Route
+            path="create-event"
+            element={
+              <OrganizerRoute>
+                <CreateEventPage />
+              </OrganizerRoute>
+            }
+          />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }
