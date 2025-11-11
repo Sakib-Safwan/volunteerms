@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
 function RegisterPage() {
+  const [name, setName] = useState(''); // NEW
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Volunteer');
@@ -14,7 +15,9 @@ function RegisterPage() {
     setError('');
 
     try {
+      // NEW: Send all fields
       await axios.post('http://localhost:8080/register', {
+        name: name,
         email: email,
         password: password,
         role: role,
@@ -33,6 +36,18 @@ function RegisterPage() {
     <div className="form-container">
       <form onSubmit={handleSubmit}>
         <h2>Create Your Account</h2>
+        
+        {/* NEW: Full Name Field */}
+        <div className="form-group">
+          <label htmlFor="name">Full Name</label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
         
         <div className="form-group">
           <label htmlFor="email">Email</label>

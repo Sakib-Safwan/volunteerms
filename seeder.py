@@ -3,7 +3,7 @@ import bcrypt
 import random
 from faker import Faker
 import os
-from datetime import datetime, timedelta # NEW: Import datetime
+from datetime import datetime, timedelta
 
 # --- Configuration ---
 NUM_VOLUNTEERS = 50
@@ -37,19 +37,25 @@ def create_users(cursor):
     
     # Create Volunteers
     for _ in range(NUM_VOLUNTEERS):
+        full_name = fake.name() # NEW
         email = fake.unique.email()
         hashed_pass = hash_password(DEFAULT_PASSWORD)
-        users.append((email, hashed_pass, "Volunteer"))
+        # NEW: Generate a default placeholder image
+        pfp_url = f"https://placehold.co/100x100/E8F5FF/1D9BF0?text={full_name[0]}"
+        users.append((full_name, email, hashed_pass, "Volunteer", pfp_url)) # NEW: Added name, pfp_url
 
     # Create Organizers
     for _ in range(NUM_ORGANIZERS):
+        full_name = fake.name() # NEW
         email = fake.unique.email()
         hashed_pass = hash_password(DEFAULT_PASSWORD)
-        users.append((email, hashed_pass, "Organizer"))
+        pfp_url = f"https://placehold.co/100x100/E8F5FF/1D9BF0?text={full_name[0]}"
+        users.append((full_name, email, hashed_pass, "Organizer", pfp_url)) # NEW: Added name, pfp_url
     
     try:
         cursor.executemany(
-            "INSERT INTO users (email, password_hash, role) VALUES (?, ?, ?)",
+            # NEW: Updated query
+            "INSERT INTO users (name, email, password_hash, role, profile_image_url) VALUES (?, ?, ?, ?, ?)",
             users
         )
         print("Users created successfully.")
@@ -156,7 +162,7 @@ def create_friendships(cursor):
             friendships.append((user_id_b, user_id_a))
 
     try:
-        # INSERT OR IGNORE avoids duplicates
+        # INSERT OR IGNOTE avoids duplicates
         cursor.executemany(
             "INSERT OR IGNORE INTO friendships (user_id_a, user_id_b) VALUES (?, ?)",
             friendships

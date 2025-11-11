@@ -8,6 +8,7 @@ function RegisteredVolunteersModal({ event, onClose }) {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
+    // ... (fetchVolunteers is same as before) ...
     const fetchVolunteers = async () => {
       try {
         const response = await axios.get(
@@ -38,12 +39,21 @@ function RegisteredVolunteersModal({ event, onClose }) {
           <ul className="volunteer-list">
             {volunteers.map((v, index) => (
               <li key={index} className="volunteer-item">
-                <strong>{v.email}</strong>
-                {v.skills && v.skills.length > 0 && (
-                  <div className="volunteer-skills">
-                    Skills: {v.skills.join(', ')}
-                  </div>
-                )}
+                {/* NEW: Show profile pic and name */}
+                <img 
+                  src={v.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${v.name[0]}`} 
+                  alt={v.name}
+                  className="user-card-avatar-small"
+                />
+                <div className="user-list-info">
+                  <strong>{v.name}</strong>
+                  <span>{v.email}</span>
+                  {v.skills && v.skills.length > 0 && (
+                    <div className="volunteer-skills">
+                      Skills: {v.skills.join(', ')}
+                    </div>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
