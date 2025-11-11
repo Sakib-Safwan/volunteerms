@@ -9,6 +9,8 @@ import CreateEventPage from './components/CreateEventPage';
 import ProfilePage from './components/ProfilePage';
 import NetworkPage from './components/NetworkPage';
 import LandingPage from './components/LandingPage';
+import GroupsPage from './components/GroupsPage'; // NEW
+import GroupDetailsPage from './components/GroupDetailsPage'; // NEW
 import './App.css';
 
 /**
@@ -45,7 +47,6 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* --- Public-Only Routes --- */}
-        {/* These routes are only visible to logged-out users */}
         <Route 
           path="/" 
           element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} 
@@ -60,8 +61,6 @@ function App() {
         />
 
         {/* --- Protected App Routes --- */}
-        {/* This is a "Layout Route". All nested routes will render
-            inside the <MainLayout> component via its <Outlet /> */}
         <Route element={<ProtectedRoute />}>
           <Route path="/home" element={<DashboardPage />} />
           <Route path="/events" element={<EventFeedPage />} />
@@ -75,10 +74,12 @@ function App() {
               </OrganizerRoute>
             }
           />
+          {/* NEW: Group Routes */}
+          <Route path="/groups" element={<GroupsPage />} />
+          <Route path="/groups/:id" element={<GroupDetailsPage />} />
         </Route>
 
         {/* --- Catch-all 404 --- */}
-        {/* Any other path will redirect to the landing page */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>

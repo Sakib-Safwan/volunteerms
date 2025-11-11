@@ -10,7 +10,8 @@ from datetime import timedelta
 NUM_VOLUNTEERS = 50
 NUM_ORGANIZERS = 5
 NUM_EVENTS = 20
-DB_PATH = os.path.join('backend', 'vms.db') # Assumes script is in the root folder
+NUM_GROUPS = 10 # NEW
+DB_PATH = os.path.join('backend', 'vms.db')
 DEFAULT_PASSWORD = "pass123"
 
 # Pre-defined skills list
@@ -23,6 +24,9 @@ SKILL_LIST = [
 # --- Setup ---
 fake = Faker()
 db = None
+all_user_ids = []
+organizer_ids = []
+volunteer_ids = []
 
 def hash_password(password):
     """Hashes a password using bcrypt, compatible with Go's DefaultCost."""
@@ -32,10 +36,10 @@ def hash_password(password):
 
 def create_users(cursor):
     """Creates a batch of volunteers and organizers."""
+    global all_user_ids, organizer_ids, volunteer_ids
     print(f"Creating {NUM_VOLUNTEERS} volunteers and {NUM_ORGANIZERS} organizers...")
     users = []
     
-    # Create Volunteers
     for _ in range(NUM_VOLUNTEERS):
         full_name = fake.name()
         email = fake.unique.email()
@@ -43,7 +47,6 @@ def create_users(cursor):
         pfp_url = f"https://placehold.co/100x100/E8F5FF/1D9BF0?text={full_name[0]}"
         users.append((full_name, email, hashed_pass, "Volunteer", pfp_url))
 
-    # Create Organizers
     for _ in range(NUM_ORGANIZERS):
         full_name = fake.name()
         email = fake.unique.email()
@@ -56,6 +59,15 @@ def create_users(cursor):
             "INSERT INTO users (name, email, password_hash, role, profile_image_url) VALUES (?, ?, ?, ?, ?)",
             users
         )
+        # Get all user IDs
+        cursor.execute("SELECT id, role FROM users")
+        for row in cursor.fetchall():
+            all_user_ids.append(row[0])
+            if row[1] == 'Volunteer':
+                volunteer_ids.append(row[0])
+            else:
+                organizer_ids.append(row[0])
+        
         print("Users created successfully.")
     except Exception as e:
         print(f"Error creating users: {e}")
@@ -63,17 +75,13 @@ def create_users(cursor):
 def create_events(cursor):
     """Creates random events assigned to organizers."""
     print(f"Creating {NUM_EVENTS} events...")
-    
-    cursor.execute("SELECT id FROM users WHERE role = 'Organizer'")
-    organizer_ids = [row[0] for row in cursor.fetchall()]
-    
     if not organizer_ids:
         print("No organizers found to create events. Aborting.")
         return
 
     now = datetime.datetime.now()
     start_date = now + timedelta(weeks=1)
-    end_date = now + timedelta(days=180) # 6 months from now
+    end_date = now + timedelta(days=180)
 
     events = []
     for _ in range(NUM_EVENTS):
@@ -84,7 +92,6 @@ def create_events(cursor):
         location = fake.address().replace('\n', ', ')
         image_url = f"https://placehold.co/600x200/1D9BF0/FFFFFF?text={name.replace(' ', '+')}"
         organizer_id = random.choice(organizer_ids)
-        
         events.append((name, date, description, location, image_url, organizer_id))
 
     try:
@@ -100,10 +107,6 @@ def create_events(cursor):
 def create_registrations(cursor):
     """Randomly registers volunteers for events."""
     print("Creating random event registrations...")
-    
-    cursor.execute("SELECT id FROM users WHERE role = 'Volunteer'")
-    volunteer_ids = [row[0] for row in cursor.fetchall()]
-    
     cursor.execute("SELECT id FROM events")
     event_ids = [row[0] for row in cursor.fetchall()]
     
@@ -117,42 +120,28 @@ def create_registrations(cursor):
         events_to_register = random.sample(event_ids, num_events)
         for event_id in events_to_register:
             registrations.append((vol_id, event_id))
-
     try:
-        cursor.executemany(
-            "INSERT OR IGNORE INTO registrations (user_id, event_id) VALUES (?, ?)",
-            registrations
-        )
+        cursor.executemany("INSERT OR IGNORE INTO registrations (user_id, event_id) VALUES (?, ?)", registrations)
         print("Registrations created successfully.")
     except Exception as e:
         print(f"Error creating registrations: {e}")
 
-def create_follows(cursor): # RENAMED
+def create_follows(cursor):
     """Randomly creates one-way follows."""
     print("Creating random follows...")
-    
-    cursor.execute("SELECT id FROM users") # All users can follow
-    all_user_ids = [row[0] for row in cursor.fetchall()]
-    
     if len(all_user_ids) < 2:
         print("Not enough users to create follows.")
         return
 
     follows = []
-    # Each user follows 0 to 10 other people
     for user_id_a in all_user_ids:
         num_follows = random.randint(0, 10)
         potential_follows = [uid for uid in all_user_ids if uid != user_id_a]
         new_follows = random.sample(potential_follows, min(num_follows, len(potential_follows)))
-        
         for user_id_b in new_follows:
-            follows.append((user_id_a, user_id_b)) # One-way
-
+            follows.append((user_id_a, user_id_b))
     try:
-        cursor.executemany(
-            "INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)", # RENAMED
-            follows
-        )
+        cursor.executemany("INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)", follows)
         print("Follows created successfully.")
     except Exception as e:
         print(f"Error creating follows: {e}")
@@ -160,10 +149,6 @@ def create_follows(cursor): # RENAMED
 def create_skills(cursor):
     """Assigns random skills to volunteers."""
     print("Assigning skills to volunteers...")
-    
-    cursor.execute("SELECT id FROM users WHERE role = 'Volunteer'")
-    volunteer_ids = [row[0] for row in cursor.fetchall()]
-    
     if not volunteer_ids:
         print("No volunteers found to assign skills.")
         return
@@ -174,15 +159,64 @@ def create_skills(cursor):
         my_skills = random.sample(SKILL_LIST, num_skills)
         for skill in my_skills:
             skills_data.append((vol_id, skill))
-    
     try:
-        cursor.executemany(
-            "INSERT OR IGNORE INTO user_skills (user_id, skill) VALUES (?, ?)",
-            skills_data
-        )
+        cursor.executemany("INSERT OR IGNORE INTO user_skills (user_id, skill) VALUES (?, ?)", skills_data)
         print("Skills assigned successfully.")
     except Exception as e:
         print(f"Error assigning skills: {e}")
+
+# NEW: Function to create groups
+def create_groups(cursor):
+    """Creates random groups and adds members."""
+    print(f"Creating {NUM_GROUPS} groups...")
+    if not all_user_ids:
+        print("No users to create groups.")
+        return
+        
+    groups = []
+    for _ in range(NUM_GROUPS):
+        name = fake.company() + " Volunteers"
+        description = fake.text(max_nb_chars=100)
+        creator_id = random.choice(all_user_ids)
+        pfp_url = f"https://placehold.co/100x100/7E57C2/FFFFFF?text={name[0]}"
+        groups.append((name, description, pfp_url, creator_id))
+        
+    try:
+        cursor.executemany(
+            "INSERT INTO groups (name, description, profile_image_url, created_by_user_id) VALUES (?, ?, ?, ?)",
+            groups
+        )
+        print("Groups created successfully.")
+    except Exception as e:
+        print(f"Error creating groups: {e}")
+
+    # Add members
+    print("Adding members to groups...")
+    cursor.execute("SELECT id FROM groups")
+    group_ids = [row[0] for row in cursor.fetchall()]
+    
+    group_memberships = []
+    # First, add all creators as admins
+    cursor.execute("SELECT id, created_by_user_id FROM groups")
+    for row in cursor.fetchall():
+        group_memberships.append((row[0], row[1], "admin"))
+        
+    # Then, add random members
+    for group_id in group_ids:
+        num_members = random.randint(2, 15)
+        members = random.sample(all_user_ids, num_members)
+        for user_id in members:
+            # Add as "member"
+            group_memberships.append((group_id, user_id, "member"))
+            
+    try:
+        cursor.executemany(
+            "INSERT OR IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)",
+            group_memberships
+        )
+        print("Group members added successfully.")
+    except Exception as e:
+        print(f"Error adding group members: {e}")
 
 def main():
     print(f"Connecting to database at {DB_PATH}...")
@@ -192,8 +226,10 @@ def main():
         
         print("Clearing old data...")
         cursor.execute("DELETE FROM user_skills")
-        cursor.execute("DELETE FROM follows") # RENAMED
+        cursor.execute("DELETE FROM follows")
         cursor.execute("DELETE FROM registrations")
+        cursor.execute("DELETE FROM group_members") # NEW
+        cursor.execute("DELETE FROM groups")       # NEW
         cursor.execute("DELETE FROM events")
         cursor.execute("DELETE FROM users")
         
@@ -202,8 +238,9 @@ def main():
         create_users(cursor)
         create_events(cursor)
         create_registrations(cursor)
-        create_follows(cursor) # RENAMED
+        create_follows(cursor)
         create_skills(cursor)
+        create_groups(cursor) # NEW
 
         db.commit()
         print("\nDatabase successfully seeded with random data!")
