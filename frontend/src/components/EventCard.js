@@ -14,11 +14,6 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
     timeZone: 'UTC' // Add timezone to avoid off-by-one day errors
   });
 
-  // Create the Google Maps link
-  const mapLink = event.locationAddress 
-    ? `https://maps.google.com/?q=${encodeURIComponent(event.locationAddress)}`
-    : null;
-
   const handleRegister = async (e) => {
     e.stopPropagation(); // Stop click from bubbling up to the card's onClick
     setIsRegistering(true);
@@ -44,26 +39,21 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
       setIsRegistering(false);
     }
   };
-  
+
   // Helper to create the social text
   const getSocialText = () => {
-    // FIXED: Default followersGoing to an empty array if it's null or undefined
+    // FIX: Add a fallback for undefined or null followersGoing
     const followersGoing = event.followersGoing || [];
     const count = event.followersGoingCount;
 
-    if (count === 0) {
-      return event.isRegistered ? <span>You are registered.</span> : null;
-    }
-
-    const firstFriend = followersGoing[0] || "1 person";
-    const otherCount = count - 1;
-
     if (event.isRegistered) {
-      if (count === 1) return <span>You and <strong>{firstFriend}</strong> are registered.</span>;
-      return <span>You, <strong>{firstFriend}</strong>, and <strong>{otherCount} other {otherCount === 1 ? 'person' : 'people'} you follow</strong> are registered.</span>;
+      if (count === 0) return <span>You are registered.</span>;
+      if (count === 1) return <span>You and <strong>{followersGoing[0]}</strong> are registered.</span>;
+      return <span>You, <strong>{followersGoing[0]}</strong>, and <strong>{count - 1} other {count - 1 === 1 ? 'person' : 'people'} you follow</strong> are registered.</span>;
     } else {
-      if (count === 1) return <span><strong>{firstFriend}</strong> is registered.</span>;
-      return <span><strong>{firstFriend}</strong> and <strong>{otherCount} other {otherCount === 1 ? 'person' : 'people'} you follow</strong> are registered.</span>;
+      if (count === 0) return null; // No one is going, show nothing
+      if (count === 1) return <span><strong>{followersGoing[0]}</strong> is registered.</span>;
+      return <span><strong>{followersGoing[0]}</strong> and <strong>{count - 1} other {count - 1 === 1 ? 'person' : 'people'} you follow</strong> are registered.</span>;
     }
   };
   const socialText = getSocialText();
@@ -93,27 +83,27 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
         <div className="event-card-body">
           <h3 className="event-card-title">{event.name}</h3>
           <p className="event-card-description">{event.description}</p>
-          {mapLink && (
+          {event.locationAddress && (
             <a 
-              href={mapLink} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+              href={`https://maps.google.com/?q=${encodeURIComponent(event.locationAddress)}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="event-card-location"
               onClick={(e) => e.stopPropagation()} // Don't trigger card click
             >
-              📍 {event.locationAddress}
+              <span role="img" aria-label="pin">📍</span> View Map
             </a>
           )}
         </div>
       </div>
       
-      {/* SOCIAL CONTEXT BAR */}
+      {/* Social Context Bar */}
       {socialText && (
         <div className="event-card-social">
-          <span>👥 {socialText}</span>
+          {socialText}
         </div>
       )}
-
+      
       {showRegisterButton && (
         <div className="event-card-actions">
           <button 
@@ -123,17 +113,6 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
           >
             {isRegistered ? 'Registered' : (isRegistering ? 'Registering...' : 'Register Now')}
           </button>
-          {mapLink && (
-            <a
-              href={mapLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-map-link"
-              onClick={(e) => e.stopPropagation()}
-            >
-              View Map
-            </a>
-          )}
           {error && <span className="error-message-small">{error}</span>}
         </div>
       )}

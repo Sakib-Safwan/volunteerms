@@ -21,30 +21,36 @@ function LeftSidebar() {
         <ul className="nav-list">
           <li className="nav-item">
             <NavLink to="/home" className="nav-pill">
-              <span className="nav-icon">🏠</span> Home
+              <span className="nav-icon" role="img" aria-label="Home">🏠</span> Home
             </NavLink>
           </li>
           <li className="nav-item">
             <NavLink to="/events" className="nav-pill">
-              <span className="nav-icon">📅</span> Events
+              <span className="nav-icon" role="img" aria-label="Events">📅</span> Events
             </NavLink>
           </li>
           {/* Network Link */}
           <li className="nav-item">
             <NavLink to="/network" className="nav-pill">
-              <span className="nav-icon">👥</span> Network
+              <span className="nav-icon" role="img" aria-label="Network">👥</span> Network
+            </NavLink>
+          </li>
+          {/* NEW: Groups Link */}
+          <li className="nav-item">
+            <NavLink to="/groups" className="nav-pill">
+              <span className="nav-icon" role="img" aria-label="Groups">🏘️</span> Groups
             </NavLink>
           </li>
           <li className="nav-item">
             <NavLink to="/profile" className="nav-pill">
-              <span className="nav-icon">👤</span> Profile
+              <span className="nav-icon" role="img" aria-label="Profile">👤</span> Profile
             </NavLink>
           </li>
           
           {userRole === 'Organizer' && (
             <li className="nav-item">
               <NavLink to="/create-event" className="nav-pill">
-                <span className="nav-icon">✨</span> Create Event
+                <span className="nav-icon" role="img" aria-label="Create Event">✨</span> Create Event
               </NavLink>
             </li>
           )}
