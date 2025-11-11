@@ -69,8 +69,6 @@ type RegisterPayload struct {
 	Password string `json:"password"`
 	Role     string `json:"role"`
 }
-
-// NEW: Structs for Groups
 type Group struct {
 	ID              int    `json:"id"`
 	Name            string `json:"name"`
@@ -78,16 +76,20 @@ type Group struct {
 	ProfileImageURL string `json:"profileImageUrl"`
 	CreatedByUserID int    `json:"createdByUserID"`
 	MemberCount     int    `json:"memberCount"`
-	IsMember        bool   `json:"isMember"` // For /groups list
-}
-type GroupDetails struct {
-	ID              int    `json:"id"`
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	ProfileImageURL string `json:"profileImageUrl"`
-	CreatedByUserID int    `json:"createdByUserID"`
-	Members         []User `json:"members"` // Full member list
 	IsMember        bool   `json:"isMember"`
+}
+
+// UPDATED: GroupDetails struct
+type GroupDetails struct {
+	ID                int    `json:"id"`
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	ProfileImageURL   string `json:"profileImageUrl"`
+	CreatedByUserID   int    `json:"createdByUserID"`
+	Members           []User `json:"members"`
+	IsMember          bool   `json:"isMember"`
+	IsAdmin           bool   `json:"isAdmin"`           // NEW
+	HasPendingRequest bool   `json:"hasPendingRequest"` // NEW
 }
 
 // initDB initializes the database and creates tables if they don't exist
@@ -98,7 +100,7 @@ func initDB() {
 		log.Fatal("Failed to open database:", err)
 	}
 
-	// ... (User, Event, Registration, Follows, Skills tables are the same) ...
+	// ... (User, Event, Registration, Follows, Skills, Groups, GroupMembers tables are the same) ...
 	createUserTable := `
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,8 +144,6 @@ func initDB() {
 		PRIMARY KEY (user_id, skill),
 		FOREIGN KEY (user_id) REFERENCES users (id)
 	);`
-
-	// NEW: Tables for Groups
 	createGroupsTable := `
 	CREATE TABLE IF NOT EXISTS groups (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,7 +153,6 @@ func initDB() {
 		created_by_user_id INTEGER,
 		FOREIGN KEY (created_by_user_id) REFERENCES users (id)
 	);`
-
 	createGroupMembersTable := `
 	CREATE TABLE IF NOT EXISTS group_members (
 		group_id INTEGER,
@@ -164,13 +163,24 @@ func initDB() {
 		FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 	);`
 
+	// NEW: Table for Group Join Requests
+	createGroupJoinRequestsTable := `
+	CREATE TABLE IF NOT EXISTS group_join_requests (
+		group_id INTEGER,
+		user_id INTEGER,
+		PRIMARY KEY (group_id, user_id),
+		FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
+		FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+	);`
+
 	execOrFatal(db, createUserTable)
 	execOrFatal(db, createEventsTable)
 	execOrFatal(db, createRegistrationsTable)
 	execOrFatal(db, createFollowsTable)
 	execOrFatal(db, createUserSkillsTable)
-	execOrFatal(db, createGroupsTable)       // NEW
-	execOrFatal(db, createGroupMembersTable) // NEW
+	execOrFatal(db, createGroupsTable)
+	execOrFatal(db, createGroupMembersTable)
+	execOrFatal(db, createGroupJoinRequestsTable) // NEW
 
 	log.Println("Database initialized successfully")
 }
@@ -225,13 +235,19 @@ func main() {
 		protected.GET("/users/followers", GetFollowersHandler)
 		protected.POST("/users/follow/:id", FollowUserHandler)
 		protected.POST("/users/unfollow/:id", UnfollowUserHandler)
-		// Groups (NEW)
+		// Groups
 		protected.GET("/groups", GetGroupsHandler)
 		protected.POST("/groups", CreateGroupHandler)
 		protected.GET("/groups/:id", GetGroupDetailsHandler)
-		protected.POST("/groups/:id/join", JoinGroupHandler)
 		protected.POST("/groups/:id/leave", LeaveGroupHandler)
 		protected.GET("/profile/my-groups", GetMyGroupsHandler)
+
+		// NEW: Group Join Request Routes
+		protected.POST("/groups/:id/request-join", RequestJoinGroupHandler)
+		protected.POST("/groups/:id/cancel-request", CancelJoinRequestHandler)
+		protected.GET("/groups/:id/requests", GetJoinRequestsHandler)             // Admin
+		protected.POST("/groups/:id/requests/approve", ApproveJoinRequestHandler) // Admin
+		protected.POST("/groups/:id/requests/deny", DenyJoinRequestHandler)       // Admin
 	}
 
 	r.Run(":8080")
@@ -264,7 +280,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// --- Auth Handlers ---
+// --- Auth Handlers (Unchanged) ---
 func RegisterHandler(c *gin.Context) {
 	var payload RegisterPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -316,13 +332,7 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &Claims{
-		UserID: storedUser.ID,
-		Role:   storedUser.Role,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
+	claims := &Claims{UserID: storedUser.ID, Role: storedUser.Role, RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: jwt.NewNumericDate(expirationTime)}}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
@@ -332,7 +342,7 @@ func LoginHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": tokenString, "role": storedUser.Role})
 }
 
-// --- Event Handlers ---
+// --- Event Handlers (Unchanged) ---
 func GetEventsHandler(c *gin.Context) {
 	myID := c.GetInt("userID")
 	followingIDs := make(map[int]bool)
@@ -473,11 +483,7 @@ func CreateEventHandler(c *gin.Context) {
 		FROM events e JOIN users u ON e.created_by_user_id = u.id
 		WHERE e.id = ?
 	`
-	err = db.QueryRow(queryRow, newEventID).Scan(
-		&createdEvent.ID, &createdEvent.Name, &createdEvent.Date, &createdEvent.Description,
-		&createdEvent.LocationAddress, &createdEvent.ImageURL, &createdEvent.CreatedBy,
-		&createdEvent.CreatedByEmail, &createdEvent.CreatedByName, &createdEvent.OrganizerProfilePicture,
-	)
+	err = db.QueryRow(queryRow, newEventID).Scan(&createdEvent.ID, &createdEvent.Name, &createdEvent.Date, &createdEvent.Description, &createdEvent.LocationAddress, &createdEvent.ImageURL, &createdEvent.CreatedBy, &createdEvent.CreatedByEmail, &createdEvent.CreatedByName, &createdEvent.OrganizerProfilePicture)
 	if err != nil {
 		log.Println("CreateEvent/QueryRow error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve created event"})
@@ -582,7 +588,7 @@ func GetVolunteersForEventHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"volunteers": volunteerList})
 }
 
-// --- Dashboard Handlers ---
+// --- Dashboard Handlers (Unchanged) ---
 func GetOrganizerEventsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
 	today := time.Now().Format("2006-01-02")
@@ -643,7 +649,7 @@ func GetVolunteerEventsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"events": events})
 }
 
-// --- Profile & Skills Handlers ---
+// --- Profile & Skills Handlers (Unchanged) ---
 func GetSkillsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
 	query := `SELECT skill FROM user_skills WHERE user_id = ?`
@@ -751,7 +757,7 @@ func UploadProfilePictureHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Profile picture updated", "imageUrl": imageURL})
 }
 
-// --- Follows Handlers ---
+// --- Follows Handlers (Unchanged) ---
 func GetUsersHandler(c *gin.Context) {
 	myID := c.GetInt("userID")
 	searchTerm := c.Query("search")
@@ -881,21 +887,17 @@ func UnfollowUserHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User unfollowed successfully"})
 }
 
-// --- Group Handlers (NEW) ---
+// --- Group Handlers ---
 
 func CreateGroupHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
-
-	// 1. Parse form data
 	name := c.PostForm("name")
 	description := c.PostForm("description")
-
 	if name == "" || description == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Name and description are required."})
 		return
 	}
 
-	// 2. Handle file upload
 	file, err := c.FormFile("image")
 	imageURL := ""
 	if err == nil {
@@ -908,19 +910,15 @@ func CreateGroupHandler(c *gin.Context) {
 		}
 		imageURL = "http://localhost:8080/uploads/" + filename
 	} else {
-		// Set a default placeholder if no image is uploaded
 		imageURL = fmt.Sprintf("https://placehold.co/600x200/1D9BF0/FFFFFF?text=%s", string(name[0]))
 	}
 
-	// 3. Create Group and add creator as admin
 	tx, err := db.Begin()
 	if err != nil {
 		log.Println("CreateGroup (tx begin) error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-
-	// Insert group
 	query := `INSERT INTO groups (name, description, profile_image_url, created_by_user_id) VALUES (?, ?, ?, ?)`
 	res, err := tx.Exec(query, name, description, imageURL, userID)
 	if err != nil {
@@ -930,8 +928,6 @@ func CreateGroupHandler(c *gin.Context) {
 		return
 	}
 	newGroupID, _ := res.LastInsertId()
-
-	// Insert creator as admin
 	memberQuery := `INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)`
 	_, err = tx.Exec(memberQuery, newGroupID, userID, "admin")
 	if err != nil {
@@ -940,20 +936,16 @@ func CreateGroupHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add creator as admin"})
 		return
 	}
-
 	if err := tx.Commit(); err != nil {
 		log.Println("CreateGroup (commit) error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
-
 	c.JSON(http.StatusCreated, gin.H{"id": newGroupID, "name": name})
 }
 
 func GetGroupsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
-
-	// This query gets all groups, counts their members, and checks if the current user is a member
 	query := `
 		SELECT g.id, g.name, g.description, g.profile_image_url, g.created_by_user_id,
 		       (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as memberCount,
@@ -967,22 +959,21 @@ func GetGroupsHandler(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-
 	groups := []Group{}
 	for rows.Next() {
 		var g Group
-		var isMember sql.NullBool // Use NullBool for the conditional check
+		var isMember sql.NullBool
 		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.ProfileImageURL, &g.CreatedByUserID, &g.MemberCount, &isMember); err != nil {
 			log.Println("GetGroups scan error:", err)
 			continue
 		}
-		g.IsMember = isMember.Valid && isMember.Bool // Convert sql.NullBool to bool
+		g.IsMember = isMember.Valid && isMember.Bool
 		groups = append(groups, g)
 	}
-
 	c.JSON(http.StatusOK, gin.H{"groups": groups})
 }
 
+// UPDATED: GetGroupDetailsHandler
 func GetGroupDetailsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
 	groupIDStr := c.Param("id")
@@ -992,7 +983,6 @@ func GetGroupDetailsHandler(c *gin.Context) {
 		return
 	}
 
-	// 1. Get Group Info
 	var g GroupDetails
 	query := `SELECT id, name, description, profile_image_url, created_by_user_id FROM groups WHERE id = ?`
 	err = db.QueryRow(query, groupID).Scan(&g.ID, &g.Name, &g.Description, &g.ProfileImageURL, &g.CreatedByUserID)
@@ -1002,7 +992,6 @@ func GetGroupDetailsHandler(c *gin.Context) {
 		return
 	}
 
-	// 2. Get Member List
 	memberQuery := `
 		SELECT u.id, u.name, u.email, u.role, u.profile_image_url
 		FROM users u
@@ -1016,42 +1005,31 @@ func GetGroupDetailsHandler(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-
-	g.Members = []User{} // Initialize to avoid null
-	g.IsMember = false
+	g.Members = []User{}
 	for rows.Next() {
 		var u User
 		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role, &u.ProfileImageURL); err != nil {
 			log.Println("GetGroupDetails (scan member) error:", err)
 			continue
 		}
-		if u.ID == userID {
-			g.IsMember = true // Check if the current user is in the list
-		}
 		g.Members = append(g.Members, u)
 	}
 
+	// Check IsMember, IsAdmin, HasPendingRequest in separate, clearer queries
+	var userRole sql.NullString
+	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&userRole)
+	if err == nil {
+		g.IsMember = true
+		g.IsAdmin = (userRole.String == "admin")
+	}
+
+	var requestCount int
+	err = db.QueryRow(`SELECT COUNT(*) FROM group_join_requests WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&requestCount)
+	if err == nil && requestCount > 0 {
+		g.HasPendingRequest = true
+	}
+
 	c.JSON(http.StatusOK, g)
-}
-
-func JoinGroupHandler(c *gin.Context) {
-	userID := c.GetInt("userID")
-	groupIDStr := c.Param("id")
-	groupID, err := strconv.Atoi(groupIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
-
-	// In V1, we just add them as a "member" directly.
-	query := `INSERT OR IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)`
-	_, err = db.Exec(query, groupID, userID, "member")
-	if err != nil {
-		log.Println("JoinGroup error:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"message": "Joined group successfully"})
 }
 
 func LeaveGroupHandler(c *gin.Context) {
@@ -1062,8 +1040,6 @@ func LeaveGroupHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
 		return
 	}
-
-	// Check if user is the *last* admin
 	var role string
 	var memberCount int
 	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&role)
@@ -1072,7 +1048,6 @@ func LeaveGroupHandler(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "You are not a member of this group"})
 		return
 	}
-
 	if role == "admin" {
 		err = db.QueryRow(`SELECT COUNT(*) FROM group_members WHERE group_id = ? AND role = 'admin'`, groupID).Scan(&memberCount)
 		if err == nil && memberCount <= 1 {
@@ -1080,8 +1055,6 @@ func LeaveGroupHandler(c *gin.Context) {
 			return
 		}
 	}
-
-	// Leave the group
 	query := `DELETE FROM group_members WHERE group_id = ? AND user_id = ?`
 	_, err = db.Exec(query, groupID, userID)
 	if err != nil {
@@ -1091,11 +1064,8 @@ func LeaveGroupHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Left group successfully"})
 }
-
 func GetMyGroupsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
-
-	// Gets groups the user is a member of
 	query := `
 		SELECT g.id, g.name, g.description, g.profile_image_url, g.created_by_user_id,
 		       (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as memberCount
@@ -1110,19 +1080,185 @@ func GetMyGroupsHandler(c *gin.Context) {
 		return
 	}
 	defer rows.Close()
-
 	groups := []Group{}
 	for rows.Next() {
 		var g Group
-		g.IsMember = true // By definition, user is a member
+		g.IsMember = true
 		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.ProfileImageURL, &g.CreatedByUserID, &g.MemberCount); err != nil {
 			log.Println("GetMyGroups scan error:", err)
 			continue
 		}
 		groups = append(groups, g)
 	}
-
 	c.JSON(http.StatusOK, gin.H{"groups": groups})
+}
+
+// --- NEW: Group Join Request Handlers ---
+
+func RequestJoinGroupHandler(c *gin.Context) {
+	userID := c.GetInt("userID")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	query := `INSERT OR IGNORE INTO group_join_requests (group_id, user_id) VALUES (?, ?)`
+	_, err = db.Exec(query, groupID, userID)
+	if err != nil {
+		log.Println("RequestJoinGroup error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Join request sent"})
+}
+func CancelJoinRequestHandler(c *gin.Context) {
+	userID := c.GetInt("userID")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	query := `DELETE FROM group_join_requests WHERE group_id = ? AND user_id = ?`
+	_, err = db.Exec(query, groupID, userID)
+	if err != nil {
+		log.Println("CancelJoinRequest error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Join request cancelled"})
+}
+func GetJoinRequestsHandler(c *gin.Context) {
+	userID := c.GetInt("userID")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	var userRole string
+	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, userID).Scan(&userRole)
+	if err != nil || userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not an admin of this group"})
+		return
+	}
+
+	query := `
+		SELECT u.id, u.name, u.email, u.profile_image_url 
+		FROM users u
+		JOIN group_join_requests r ON u.id = r.user_id
+		WHERE r.group_id = ?
+	`
+	rows, err := db.Query(query, groupID)
+	if err != nil {
+		log.Println("GetJoinRequests error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer rows.Close()
+
+	requests := []User{}
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.ProfileImageURL); err != nil {
+			log.Println("GetJoinRequests scan error:", err)
+			continue
+		}
+		requests = append(requests, u)
+	}
+	c.JSON(http.StatusOK, gin.H{"requests": requests})
+}
+
+// ApproveJoinRequestHandler (requires request body)
+func ApproveJoinRequestHandler(c *gin.Context) {
+	myUserID := c.GetInt("userID")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	var payload struct {
+		UserID int `json:"userId"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID in request"})
+		return
+	}
+
+	var myRole string
+	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, myUserID).Scan(&myRole)
+	if err != nil || myRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not an admin of this group"})
+		return
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println("ApproveJoin (tx begin) error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	_, err = tx.Exec(`DELETE FROM group_join_requests WHERE group_id = ? AND user_id = ?`, groupID, payload.UserID)
+	if err != nil {
+		tx.Rollback()
+		log.Println("ApproveJoin (delete) error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	_, err = tx.Exec(`INSERT OR IGNORE INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)`, groupID, payload.UserID, "member")
+	if err != nil {
+		tx.Rollback()
+		log.Println("ApproveJoin (insert) error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Println("ApproveJoin (commit) error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User approved and added to group"})
+}
+
+// DenyJoinRequestHandler (requires request body)
+func DenyJoinRequestHandler(c *gin.Context) {
+	myUserID := c.GetInt("userID")
+	groupIDStr := c.Param("id")
+	groupID, err := strconv.Atoi(groupIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
+		return
+	}
+	var payload struct {
+		UserID int `json:"userId"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID in request"})
+		return
+	}
+
+	var myRole string
+	err = db.QueryRow(`SELECT role FROM group_members WHERE group_id = ? AND user_id = ?`, groupID, myUserID).Scan(&myRole)
+	if err != nil || myRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not an admin of this group"})
+		return
+	}
+
+	query := `DELETE FROM group_join_requests WHERE group_id = ? AND user_id = ?`
+	_, err = db.Exec(query, groupID, payload.UserID)
+	if err != nil {
+		log.Println("DenyJoin error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User request denied"})
 }
 
 // SeedDatabaseHandler
