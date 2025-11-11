@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 function CreateEventPage() {
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
-  const [locationAddress, setLocationAddress] = useState(''); // REVERTED
+  const [locationAddress, setLocationAddress] = useState('');
   const [eventDescription, setEventDescription] = useState('');
   const [eventImage, setEventImage] = useState(null);
   const [error, setError] = useState('');
@@ -26,7 +26,7 @@ function CreateEventPage() {
     formData.append('name', eventName);
     formData.append('date', eventDate);
     formData.append('description', eventDescription);
-    formData.append('locationAddress', locationAddress); // REVERTED
+    formData.append('locationAddress', locationAddress);
 
     if (eventImage) {
       formData.append('image', eventImage);
@@ -77,7 +77,6 @@ function CreateEventPage() {
             />
           </div>
 
-          {/* REVERTED: Location Address Field */}
           <div className="form-group">
             <label htmlFor="locationAddress">Location Address (Optional)</label>
             <textarea

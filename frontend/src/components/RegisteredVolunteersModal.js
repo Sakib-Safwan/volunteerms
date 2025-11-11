@@ -8,7 +8,6 @@ function RegisteredVolunteersModal({ event, onClose }) {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    // ... (fetchVolunteers is same as before) ...
     const fetchVolunteers = async () => {
       try {
         const response = await axios.get(
@@ -39,7 +38,6 @@ function RegisteredVolunteersModal({ event, onClose }) {
           <ul className="volunteer-list">
             {volunteers.map((v, index) => (
               <li key={index} className="volunteer-item">
-                {/* NEW: Show profile pic and name */}
                 <img 
                   src={v.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${v.name[0]}`} 
                   alt={v.name}

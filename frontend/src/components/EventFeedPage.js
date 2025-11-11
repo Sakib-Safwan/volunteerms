@@ -6,20 +6,31 @@ function EventFeedPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const token = localStorage.getItem('token'); // Get token
 
   useEffect(() => {
     const fetchEvents = async () => {
+      if (!token) {
+        setError('You must be logged in to see events.');
+        setLoading(false);
+        return;
+      }
       try {
-        const response = await axios.get('http://localhost:8080/events');
+        // Send token in the request
+        const response = await axios.get('http://localhost:8080/events', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setEvents(response.data.events || []);
       } catch (err) {
         setError('Could not fetch events.');
+        console.error("Fetch events error:", err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchEvents();
-  }, []);
+  }, [token]);
 
   return (
     <div className="page-feed-container">
@@ -31,11 +42,15 @@ function EventFeedPage() {
       {error && <p className="error-message" style={{textAlign: 'center', padding: '1rem'}}>{error}</p>}
       
       <div className="event-list-feed">
-        {events.length === 0 && !loading ? (
+        {!loading && events.length === 0 ? (
           <p className="loading-message">No upcoming events found.</p>
         ) : (
           events.map(event => (
-            <EventCard key={event.id} event={event} />
+            <EventCard 
+              key={event.id} 
+              event={event} 
+              showRegisterButton={true} // Show the button on the main feed
+            />
           ))
         )}
       </div>

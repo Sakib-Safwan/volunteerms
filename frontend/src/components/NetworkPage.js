@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { useDebounce } from '../hooks/useDebounce'; // We'll create this hook
+import { useDebounce } from '../hooks/useDebounce';
 
 function UserCard({ user, onAddFriend, isFriend, status }) {
   return (
@@ -90,7 +90,6 @@ function NetworkPage() {
         <h2>Find People</h2>
       </div>
 
-      {/* NEW: Search Bar */}
       <div className="search-bar-container">
         <input
           type="text"
@@ -104,7 +103,6 @@ function NetworkPage() {
       {loading && <div className="loading-message">Loading users...</div>}
       {error && <p className="error-message">{error}</p>}
       
-      {/* NEW: Grid layout for User Cards */}
       <div className="user-card-grid">
         {!loading && users.length === 0 && <p>No users found.</p>}
         {users.map(user => (
