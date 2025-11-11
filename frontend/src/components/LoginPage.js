@@ -18,11 +18,11 @@ function LoginPage() {
         password: password,
       });
 
-      // Store token and role
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('role', response.data.role);
       
-      // Navigate to the home/dashboard page
+      // This is correct: it navigates to /home, which
+      // will be caught by the protected "/*" route.
       navigate('/home'); 
 
     } catch (err) {
@@ -38,7 +38,7 @@ function LoginPage() {
     <div className="form-container">
       <form onSubmit={handleSubmit}>
         <h2>Welcome Back!</h2>
-        
+        {/* ... (rest of the form) ... */}
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input
@@ -49,7 +49,6 @@ function LoginPage() {
             required
           />
         </div>
-        
         <div className="form-group">
           <label htmlFor="password">Password</label>
           <input
@@ -60,14 +59,11 @@ function LoginPage() {
             required
           />
         </div>
-        
         {error && <p className="error-message">{error}</p>}
-        
         <button type="submit" className="btn btn-primary">
           Login
         </button>
       </form>
-      
       <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-color-light)' }}>
         Don't have an account? <Link to="/register" style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: '600' }}>Register</Link>
       </p>
