@@ -366,13 +366,17 @@ func GetEventsHandler(c *gin.Context) {
 	}
 
 	// 4. Get all events and join with organizer info
+	// UPDATED: Added WHERE e.date >= ? and ORDER BY e.date ASC
+	today := time.Now().Format("2006-01-02")
 	query := `
 		SELECT e.id, e.name, e.date, e.description, e.location_address, e.image_url, 
 		       e.created_by_user_id, u.email, u.name, u.profile_image_url
 		FROM events e
 		JOIN users u ON e.created_by_user_id = u.id
+		WHERE e.date >= ?
+		ORDER BY e.date ASC
 	`
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, today) // Pass today's date
 	if err != nil {
 		log.Println("GetEvents error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -422,6 +426,13 @@ func CreateEventHandler(c *gin.Context) {
 
 	if name == "" || date == "" || description == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event data. Name, date, and description are required."})
+		return
+	}
+
+	// Check if date is in the past
+	today := time.Now().Format("2006-01-02")
+	if date < today {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot create an event in the past."})
 		return
 	}
 
@@ -475,6 +486,19 @@ func RegisterForEventHandler(c *gin.Context) {
 	eventID, err := strconv.Atoi(eventIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID"})
+		return
+	}
+
+	// Check if event is in the past
+	var eventDate string
+	err = db.QueryRow(`SELECT date FROM events WHERE id = ?`, eventID).Scan(&eventDate)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
+		return
+	}
+	today := time.Now().Format("2006-01-02")
+	if eventDate < today {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot register for an event in the past."})
 		return
 	}
 
@@ -570,14 +594,17 @@ func GetVolunteersForEventHandler(c *gin.Context) {
 // --- Dashboard Handlers ---
 func GetOrganizerEventsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
+	// UPDATED: Sort by date
+	today := time.Now().Format("2006-01-02")
 	query := `
 		SELECT e.id, e.name, e.date, e.description, e.location_address, e.image_url, 
 		       e.created_by_user_id, u.email, u.name, u.profile_image_url
 		FROM events e
 		JOIN users u ON e.created_by_user_id = u.id
-		WHERE e.created_by_user_id = ?
+		WHERE e.created_by_user_id = ? AND e.date >= ?
+		ORDER BY e.date ASC
 	`
-	rows, err := db.Query(query, userID)
+	rows, err := db.Query(query, userID, today)
 	if err != nil {
 		log.Println("GetOrganizerEvents error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -599,15 +626,18 @@ func GetOrganizerEventsHandler(c *gin.Context) {
 
 func GetVolunteerEventsHandler(c *gin.Context) {
 	userID := c.GetInt("userID")
+	// UPDATED: Sort by date
+	today := time.Now().Format("2006-01-02")
 	query := `
 		SELECT e.id, e.name, e.date, e.description, e.location_address, e.image_url, 
 		       e.created_by_user_id, u.email, u.name, u.profile_image_url
 		FROM events e
 		JOIN users u ON e.created_by_user_id = u.id
 		JOIN registrations r ON e.id = r.event_id
-		WHERE r.user_id = ?
+		WHERE r.user_id = ? AND e.date >= ?
+		ORDER BY e.date ASC
 	`
-	rows, err := db.Query(query, userID)
+	rows, err := db.Query(query, userID, today)
 	if err != nil {
 		log.Println("GetVolunteerEvents error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
