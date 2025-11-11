@@ -15,7 +15,6 @@ function RegisterPage() {
     setError('');
 
     try {
-      // Send all fields
       await axios.post('http://localhost:8080/register', {
         name: name,
         email: email,
@@ -37,7 +36,6 @@ function RegisterPage() {
       <form onSubmit={handleSubmit}>
         <h2>Create Your Account</h2>
         
-        {/* Full Name Field */}
         <div className="form-group">
           <label htmlFor="name">Full Name</label>
           <input

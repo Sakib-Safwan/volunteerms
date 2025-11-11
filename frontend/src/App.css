@@ -9,6 +9,7 @@
   --text-color-light: #536471;
   --border-color: #eff3f4; /* Twitter's light border */
   --error-color: #dc3545;
+  --success-color: #17bf63; /* Green for approve */
   --shadow: 0 0 0 1px var(--border-color); /* Subtle border */
   --border-radius: 16px;
   --font-main: 'TwitterChirp', -apple-system, BlinkMacSystemFont, 'Segoe UI',
@@ -29,7 +30,6 @@ body {
 /* --- Twitter 3-Column Layout --- */
 .app-layout {
   display: grid;
-  /* Adjust columns to prevent overlap */
   grid-template-columns: minmax(68px, 275px) minmax(0, 1fr) minmax(300px, 350px);
   max-width: 1265px;
   margin: 0 auto;
@@ -39,8 +39,7 @@ body {
   border-left: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   min-height: 100vh;
-  /* Set min-width to prevent content from being crushed */
-  min-width: 600px;
+  min-width: 600px; /* Prevents content from being crushed */
 }
 
 .left-sidebar,
@@ -60,7 +59,6 @@ body {
 .left-sidebar {
   padding: 0 12px;
 }
-
 .nav-brand-logo {
   font-size: 2rem;
   font-weight: bold;
@@ -68,13 +66,11 @@ body {
   padding: 12px;
   margin-bottom: 12px;
 }
-
 .nav-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-
 .nav-pill {
   display: flex;
   align-items: center;
@@ -87,22 +83,17 @@ body {
   transition: background-color 0.2s;
   margin-bottom: 8px;
 }
-
 .nav-pill:hover {
   background-color: #e7e7e8;
 }
-
-/* This is the style for the *active* link */
 .nav-pill.active {
   font-weight: 700;
   color: var(--text-color);
 }
-
 .nav-icon {
   font-size: 24px;
   margin-right: 20px;
 }
-
 .btn-logout {
   background-color: var(--primary-color);
   color: white;
@@ -152,19 +143,21 @@ body {
   color: var(--text-color-light);
 }
 
-
 /* --- Main Feed Column --- */
 .page-feed-container {
-  min-width: 0; /* Prevents overflow */
+  min-width: 0;
 }
 .page-feed-header {
   position: sticky;
   top: 0;
-  background-color: rgba(255, 255, 255, 0.85); /* Glass effect */
+  background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
   z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .page-feed-header h2 {
   font-size: 20px;
@@ -217,7 +210,7 @@ body {
   align-items: center;
   justify-content: center;
   margin-right: 12px;
-  overflow: hidden; /* For avatar images */
+  overflow: hidden;
 }
 .event-organizer {
   font-weight: 700;
@@ -238,7 +231,7 @@ body {
   margin: 0;
   font-size: 15px;
   color: var(--text-color);
-  white-space: pre-wrap; /* Preserves line breaks */
+  white-space: pre-wrap;
 }
 .event-card-location {
   display: inline-block;
@@ -254,7 +247,7 @@ body {
 
 /* Social Context */
 .event-card-social {
-  padding: 10px 16px 10px 68px; /* Aligns with content */
+  padding: 10px 16px 10px 68px;
   font-size: 14px;
   color: var(--text-color-light);
   border-top: 1px solid var(--border-color);
@@ -280,7 +273,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
-  width: auto; /* Override full width */
+  width: auto;
   min-width: 100px;
 }
 .btn.btn-primary.btn-register:hover {
@@ -290,6 +283,19 @@ body {
   background-color: var(--text-color-light);
   cursor: not-allowed;
   opacity: 0.7;
+}
+.btn-map-link {
+  background-color: transparent;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+.btn-map-link:hover {
+  background-color: rgba(29, 155, 240, 0.1);
 }
 .error-message-small {
   color: var(--error-color);
@@ -307,7 +313,6 @@ body {
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
-
 .form-container h2 {
   text-align: center;
   margin-top: 0;
@@ -425,7 +430,7 @@ body {
   border-radius: 50%;
   object-fit: cover;
   background-color: #e7e7e8;
-  flex-shrink: 0; /* Prevents avatar from shrinking */
+  flex-shrink: 0;
 }
 .user-card-avatar-small {
   width: 40px;
@@ -438,9 +443,7 @@ body {
 .user-card-info {
   display: flex;
   flex-direction: column;
-  /* Grow to fill space, push button to the right */
   flex-grow: 1; 
-  /* Prevent text overflow */
   min-width: 0; 
 }
 .user-card-info strong {
@@ -462,8 +465,7 @@ body {
   color: var(--primary-color) !important;
   text-transform: uppercase;
 }
-.btn-add-friend {
-  /* This is the "Follow" button */
+.btn-follow { /* Renamed from btn-add-friend */
   background-color: var(--text-color);
   color: white;
   border: 1px solid var(--text-color);
@@ -472,17 +474,22 @@ body {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  /* Stop button from shrinking */
   flex-shrink: 0; 
   transition: all 0.2s;
-  width: auto;
+  width: 100px;
+  box-sizing: border-box;
+  margin-left: auto; /* FIX: Pushes button to the right */
 }
-.btn-add-friend.followed {
-  /* This is the "Following" button */
+.btn-follow.following {
   background-color: transparent;
   color: var(--text-color);
 }
-.btn-add-friend:hover {
+.btn-follow.following:hover {
+  background-color: rgba(220, 53, 69, 0.1); /* Red hover */
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+.btn-follow:hover {
   opacity: 0.8;
 }
 
@@ -616,7 +623,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4); /* Darker backdrop */
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -624,17 +631,17 @@ body {
 }
 .modal-content {
   background-color: var(--background-color);
-  padding: 1rem 0; /* Remove side padding */
+  padding: 1rem 0;
   border-radius: var(--border-radius);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 500px;
   z-index: 101;
-  overflow: hidden; /* For rounded corners */
+  overflow: hidden;
 }
 .modal-content h2 {
   margin: 0;
-  padding: 1rem 1.5rem; /* Add padding back to header */
+  padding: 1rem 1.5rem;
   font-size: 20px;
 }
 .btn-close-modal {
@@ -646,7 +653,7 @@ body {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  margin: 1.5rem 1.5rem 0.5rem 1.5rem; /* Add padding to button area */
+  margin: 1.5rem 1.5rem 0.5rem 1.5rem;
   transition: background-color 0.2s;
 }
 .btn-close-modal:hover {
@@ -676,6 +683,8 @@ body {
 .user-list-info {
   display: flex;
   flex-direction: column;
+  flex-grow: 1; /* Grow to fill space */
+  min-width: 0; /* Prevent overflow */
 }
 .user-list-info strong {
   font-weight: 600;
@@ -715,165 +724,53 @@ body {
   background-color: var(--primary-color-dark);
 }
 
-.landing-page-container {
-  background-color: var(--background-color);
+/* --- Styles for Group Details Page (Modified & New) --- */
+.btn-join-group-pending {
+  background-color: transparent;
   color: var(--text-color);
-}
-
-.landing-header {
-  border-bottom: 1px solid var(--border-color);
-}
-
-.landing-nav {
-  max-width: 1265px;
-  margin: 0 auto;
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.landing-brand-logo {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.landing-nav-links {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.btn-nav-login {
-  text-decoration: none;
-  font-weight: 600;
-  color: var(--text-color-light);
-  padding: 0.5rem 1rem;
+  border: 1px solid var(--text-color-light);
   border-radius: 9999px;
-  transition: all 0.2s ease;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 140px; /* A bit wider */
+  margin-top: -30px;
+  z-index: 2;
+  background-color: white;
 }
-.btn-nav-login:hover {
+.btn-join-group-pending:hover {
   background-color: #f7f9f9;
-  color: var(--text-color);
 }
-
-.btn-nav-register {
-  text-decoration: none;
-  font-weight: 600;
-  color: white;
-  background-color: var(--text-color);
-  padding: 0.5rem 1.25rem;
+.request-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto; /* Push to the right */
+  flex-shrink: 0;
+}
+.btn-approve, .btn-deny {
+  border: none;
   border-radius: 9999px;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
-.btn-nav-register:hover {
+.btn-approve {
+  background-color: var(--success-color); /* Green */
+  color: white;
+}
+.btn-deny {
+  background-color: var(--error-color); /* Red */
+  color: white;
+}
+.btn-approve:hover, .btn-deny:hover {
   opacity: 0.8;
 }
 
-/* Hero Section */
-.hero-section {
-  max-width: 1265px;
-  margin: 0 auto;
-  padding: 6rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-}
-
-.hero-content {
-  flex: 1;
-  max-width: 600px;
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  line-height: 1.2;
-  margin: 0 0 1.5rem 0;
-}
-
-.hero-subtitle {
-  font-size: 1.25rem;
-  color: var(--text-color-light);
-  margin: 0 0 2.5rem 0;
-}
-
-.btn-hero {
-  font-size: 1.1rem;
-  padding: 1rem 2rem;
-  width: auto;
-}
-
-.hero-image-placeholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10rem;
-  background-color: #f7f9f9;
-  border-radius: var(--border-radius);
-  max-width: 500px;
-  height: 400px;
-}
-
-/* Features Section */
-.features-section {
-  background-color: #f7f9f9;
-  padding: 5rem 2rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.features-section h2 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  margin: 0 0 4rem 0;
-}
-
-.features-grid {
-  max-width: 1265px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-}
-
-.feature-card {
-  background-color: var(--background-color);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 2rem;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.feature-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.feature-card h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-}
-
-.feature-card p {
-  font-size: 1rem;
-  color: var(--text-color-light);
-  line-height: 1.6;
-  margin: 0;
-}
 /* --- Group Page Styles --- */
-.page-feed-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .btn-create-group {
   background-color: var(--primary-color);
   color: white;
@@ -929,13 +826,12 @@ body {
   font-size: 14px;
   color: var(--text-color-light);
   margin: 0 0 1rem 0;
-  /* Clamp description to 2 lines */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;  
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 40px; /* 2 lines */
+  min-height: 40px;
 }
 .group-card-footer {
   font-size: 14px;
@@ -962,7 +858,8 @@ body {
   display: flex;
   justify-content: flex-end;
   padding: 0 1.5rem;
-  height: 60px; /* Pushes content down */
+  height: 60px;
+  gap: 1rem;
 }
 .btn-join-group {
   background-color: var(--primary-color);
@@ -974,8 +871,8 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  width: 120px; /* Fixed width */
-  margin-top: -30px; /* Sits on top of the border */
+  width: 140px;
+  margin-top: -30px;
   z-index: 2;
   border: 2px solid white;
 }
@@ -997,6 +894,26 @@ body {
 .btn-leave-group:hover {
   background-color: rgba(220, 53, 69, 0.1);
 }
+/* New Invite Button */
+.btn-invite {
+  background-color: var(--text-color);
+  color: white;
+  border: 1px solid var(--text-color);
+  border-radius: 9999px;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100px;
+  margin-top: -30px;
+  z-index: 2;
+  border: 2px solid white;
+}
+.btn-invite:hover {
+  opacity: 0.8;
+}
+
 
 .group-details-info h2 {
   font-size: 24px;
@@ -1009,66 +926,179 @@ body {
   margin: 0 0 1rem 0;
 }
 .group-details-members {
-  padding: 0 1.5rem;
+  padding: 0;
 }
 .group-details-members h3 {
   font-size: 18px;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5rem;
+  padding: 0 1.5rem 0.5rem 1.5rem;
+  margin: 0;
 }
 
-
-/* --- Styles for Group Details Page (Modified & New) --- */
-
-/* New button style for "Request Sent" */
-.btn-join-group-pending {
-  background-color: transparent;
-  color: var(--text-color);
-  border: 1px solid var(--text-color-light);
-  border-radius: 9999px;
-  padding: 10px 20px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  width: 140px; /* A bit wider */
-  margin-top: -30px;
-  z-index: 2;
-  background-color: white;
-}
-.btn-join-group-pending:hover {
-  background-color: #f7f9f9;
-}
-
-/* Make sure modal list has no top border */
-.volunteer-list {
-  border-top: none; 
-}
-
-/* New styles for admin request management */
-.request-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-left: auto; /* Push to the right */
-}
-
-.btn-approve, .btn-deny {
-  border: none;
-  border-radius: 9999px;
+.admin-badge {
+  margin-left: auto;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 14px;
-  padding: 6px 14px;
-  cursor: pointer;
-  transition: opacity 0.2s;
+  color: var(--primary-color);
+  background-color: rgba(29, 155, 240, 0.1);
+  padding: 4px 8px;
+  border-radius: 9999px;
 }
-.btn-approve {
-  background-color: var(--primary-color);
+
+/* --- Notifications Page --- */
+.notification-list {
+  display: flex;
+  flex-direction: column;
+}
+.notification-card {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+}
+.notification-info {
+  flex-grow: 1;
+  font-size: 15px;
+}
+.notification-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 600;
+}
+.notification-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Landing Page --- */
+.landing-page-container {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+.landing-header {
+  border-bottom: 1px solid var(--border-color);
+}
+.landing-nav {
+  max-width: 1265px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.landing-brand-logo {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+.landing-nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.btn-nav-login {
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--text-color-light);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+.btn-nav-login:hover {
+  background-color: #f7f9f9;
+  color: var(--text-color);
+}
+.btn-nav-register {
+  text-decoration: none;
+  font-weight: 600;
   color: white;
+  background-color: var(--text-color);
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
 }
-.btn-deny {
-  background-color: var(--text-color-light);
-  color: white;
-}
-.btn-approve:hover, .btn-deny:hover {
+.btn-nav-register:hover {
   opacity: 0.8;
+}
+.hero-section {
+  max-width: 1265px;
+  margin: 0 auto;
+  padding: 6rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+.hero-content {
+  flex: 1;
+  max-width: 600px;
+}
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 1.5rem 0;
+}
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--text-color-light);
+  margin: 0 0 2.5rem 0;
+}
+.btn-hero {
+  font-size: 1.1rem;
+  padding: 1rem 2rem;
+  width: auto;
+}
+.hero-image-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10rem;
+  background-color: #f7f9f9;
+  border-radius: var(--border-radius);
+  max-width: 500px;
+  height: 400px;
+}
+.features-section {
+  background-color: #f7f9f9;
+  padding: 5rem 2rem;
+  border-top: 1px solid var(--border-color);
+}
+.features-section h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 4rem 0;
+}
+.features-grid {
+  max-width: 1265px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+.feature-card {
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.feature-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+.feature-card h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+}
+.feature-card p {
+  font-size: 1rem;
+  color: var(--text-color-light);
+  line-height: 1.6;
+  margin: 0;
 }

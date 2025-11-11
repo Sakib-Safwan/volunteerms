@@ -29,11 +29,11 @@ function RegisteredVolunteersModal({ event, onClose }) {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <h2>Volunteers for "{event.name}"</h2>
         
-        {loading && <p>Loading volunteers...</p>}
+        {loading && <p className="loading-message">Loading volunteers...</p>}
         {error && <p className="error-message">{error}</p>}
         
         {!loading && volunteers.length === 0 ? (
-          <p>No volunteers have registered for this event yet.</p>
+          <p className="loading-message">No volunteers have registered for this event yet.</p>
         ) : (
           <ul className="volunteer-list">
             {volunteers.map((v, index) => (
@@ -45,7 +45,7 @@ function RegisteredVolunteersModal({ event, onClose }) {
                 />
                 <div className="user-list-info">
                   <strong>{v.name}</strong>
-                  <span>{v.email}</span>
+                  <span>{v.email}</span>a
                   {v.skills && v.skills.length > 0 && (
                     <div className="volunteer-skills">
                       Skills: {v.skills.join(', ')}

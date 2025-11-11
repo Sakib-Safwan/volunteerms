@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; // NEW
+import { Link } from 'react-router-dom';
 
-// (SkillTagInput component remains the same)
+// (SkillTagInput component)
 function SkillTagInput({ skills, setSkills }) {
   const [inputValue, setInputValue] = useState('');
   const handleKeyDown = (e) => {
@@ -52,7 +52,7 @@ function UserCard({ user }) {
   );
 }
 
-// NEW: Group Card for My Groups list
+// Group Card for My Groups list
 function GroupCardCondensed({ group }) {
   return (
     <Link to={`/groups/${group.id}`} className="user-card-condensed" style={{textDecoration: 'none'}}>
@@ -76,7 +76,7 @@ function ProfilePage() {
   const [skills, setSkills] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
-  const [myGroups, setMyGroups] = useState([]); // NEW
+  const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
@@ -86,7 +86,7 @@ function ProfilePage() {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role');
 
-  // 1. Fetch all profile data on load
+  // Fetch all profile data on load
   useEffect(() => {
     if (userRole === 'Organizer') {
       setActiveTab('following');
@@ -106,14 +106,14 @@ function ProfilePage() {
           axios.get('http://localhost:8080/profile/skills', { headers: { Authorization: `Bearer ${token}` } }),
           axios.get('http://localhost:8080/users/followers', { headers: { Authorization: `Bearer ${token}` } }),
           axios.get('http://localhost:8080/users/following', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:8080/profile/my-groups', { headers: { Authorization: `Bearer ${token}` } }) // NEW
+          axios.get('http://localhost:8080/profile/my-groups', { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
         setProfile(profileRes.data);
         setSkills(skillsRes.data.skills || []);
         setFollowers(followersRes.data.users || []);
         setFollowing(followingRes.data.users || []);
-        setMyGroups(myGroupsRes.data.groups || []); // NEW
+        setMyGroups(myGroupsRes.data.groups || []);
         
       } catch (err) {
         setError('Could not fetch profile data.');
@@ -125,9 +125,8 @@ function ProfilePage() {
     fetchAllData();
   }, [token, userRole]);
 
-  // 2. Save skills
+  // Save skills
   const handleSaveSkills = async () => {
-    // ... (same as before) ...
     setError(''); setStatus('Saving...');
     try {
       await axios.post('http://localhost:8080/profile/skills', { skills: skills }, { headers: { Authorization: `Bearer ${token}` } });
@@ -136,9 +135,8 @@ function ProfilePage() {
     } catch (err) { setError('Could not update skills.'); setStatus(''); }
   };
 
-  // 3. Handle Profile Picture Upload
+  // Handle Profile Picture Upload
   const handleFileChange = async (e) => {
-    // ... (same as before) ...
     const file = e.target.files[0];
     if (!file) return;
     const formData = new FormData();
@@ -200,7 +198,6 @@ function ProfilePage() {
             My Skills
           </button>
         )}
-        {/* NEW: My Groups Tab */}
         <button 
           className={`profile-tab-btn ${activeTab === 'groups' ? 'active' : ''}`}
           onClick={() => setActiveTab('groups')}
@@ -236,7 +233,6 @@ function ProfilePage() {
           </div>
         )}
         
-        {/* NEW: My Groups Content */}
         {activeTab === 'groups' && (
           <div className="user-card-grid-condensed">
             {myGroups.length === 0 ? <p className="loading-message">You haven't joined any groups yet.</p> :

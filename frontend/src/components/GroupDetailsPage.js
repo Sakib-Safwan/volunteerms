@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import InviteModal from './InviteModal'; // NEW
 
-// NEW: A component for the admin to manage join requests
+// A component for the admin to manage join requests
 function JoinRequests({ requests, onApprove, onDeny }) {
   if (requests.length === 0) {
     return <p className="loading-message">No pending join requests.</p>;
   }
-
   return (
     <ul className="volunteer-list" style={{borderTop: 'none'}}>
       {requests.map(user => (
@@ -37,20 +37,20 @@ function GroupDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // State for the main join/leave button
   const [isMember, setIsMember] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // State for the Admin tab
-  const [activeTab, setActiveTab] = useState('members'); // 'members' or 'requests'
+  const [activeTab, setActiveTab] = useState('members');
   const [requests, setRequests] = useState([]);
+  
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false); // NEW
   
   const { id } = useParams();
   const token = localStorage.getItem('token');
 
-  // Fetches all group details (info, members, admin status, etc.)
+  // Fetches all group details
   const fetchGroupDetails = async () => {
     try {
       setLoading(true);
@@ -82,33 +82,27 @@ function GroupDetailsPage() {
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchGroupDetails();
   }, [id, token]);
 
-  // Fetch join requests *after* we know the user is an admin
   useEffect(() => {
     if (isAdmin) {
       fetchJoinRequests();
     }
-  }, [isAdmin]); // Runs when isAdmin state is set
+  }, [isAdmin, id, token]);
 
 
   // --- Button Handlers ---
-
   const handleRequestJoin = async () => {
     setIsProcessing(true);
     try {
       await axios.post(`http://localhost:8080/groups/${id}/request-join`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setHasPendingRequest(true); // Update UI to "Request Sent"
-    } catch (err) {
-      console.error("Failed to request join", err);
-    } finally {
-      setIsProcessing(false);
-    }
+      setHasPendingRequest(true);
+    } catch (err) { console.error("Failed to request join", err); } 
+    finally { setIsProcessing(false); }
   };
   
   const handleCancelRequest = async () => {
@@ -117,12 +111,9 @@ function GroupDetailsPage() {
       await axios.post(`http://localhost:8080/groups/${id}/cancel-request`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setHasPendingRequest(false); // Update UI to "Request to Join"
-    } catch (err) {
-      console.error("Failed to cancel request", err);
-    } finally {
-      setIsProcessing(false);
-    }
+      setHasPendingRequest(false);
+    } catch (err) { console.error("Failed to cancel request", err); } 
+    finally { setIsProcessing(false); }
   };
 
   const handleLeave = async () => {
@@ -133,12 +124,11 @@ function GroupDetailsPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsMember(false);
-      // Refresh all details
       fetchGroupDetails();
     } catch (err) {
       console.error("Failed to leave group", err);
       if (err.response && err.response.data.error) {
-        alert(err.response.data.error); // Show admin error
+        alert(err.response.data.error);
       }
     } finally {
       setIsProcessing(false);
@@ -146,37 +136,29 @@ function GroupDetailsPage() {
   };
 
   // --- Admin Action Handlers ---
-  
   const handleApprove = async (userId) => {
     try {
       await axios.post(`http://localhost:8080/groups/${id}/requests/approve`, 
-        { userId: userId }, // Send the userID in the body
+        { userId: userId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Refresh both requests and member list
       fetchJoinRequests();
-      fetchGroupDetails();
-    } catch (err) {
-      console.error("Failed to approve user", err);
-    }
+      fetchGroupDetails(); // Refresh members
+    } catch (err) { console.error("Failed to approve user", err); }
   };
   
   const handleDeny = async (userId) => {
     try {
       await axios.post(`http://localhost:8080/groups/${id}/requests/deny`, 
-        { userId: userId }, // Send the userID in the body
+        { userId: userId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Just refresh requests
-      fetchJoinRequests();
-    } catch (err) {
-      console.error("Failed to deny user", err);
-    }
+      fetchJoinRequests(); // Just refresh requests
+    } catch (err) { console.error("Failed to deny user", err); }
   };
   
   
   // --- Render Logic ---
-
   const renderJoinButton = () => {
     if (isMember) {
       return (
@@ -192,7 +174,7 @@ function GroupDetailsPage() {
     if (hasPendingRequest) {
       return (
         <button 
-          className="btn-join-group-pending" // New style
+          className="btn-join-group-pending"
           onClick={handleCancelRequest}
           disabled={isProcessing}
         >
@@ -213,11 +195,7 @@ function GroupDetailsPage() {
 
 
   if (loading) {
-    return (
-      <div className="page-feed-container">
-        <div className="loading-message">Loading group...</div>
-      </div>
-    );
+    return <div className="page-feed-container"><div className="loading-message">Loading group...</div></div>;
   }
   if (error) {
     return <p className="error-message">{error}</p>;
@@ -227,74 +205,92 @@ function GroupDetailsPage() {
   }
 
   return (
-    <div className="page-feed-container">
-      <div className="group-details-header">
-        <img 
-          src={group.profileImageUrl || `https://placehold.co/600x200/7E57C2/FFFFFF?text=${group.name[0]}`}
-          alt={group.name}
-          className="group-details-image"
-        />
-      </div>
-
-      <div className="group-details-actions">
-        {renderJoinButton()}
-      </div>
-
-      <div className="group-details-info">
-        <h2>{group.name}</h2>
-        <p>{group.description}</p>
-      </div>
-      
-      {/* NEW: Admin/Member Tabs */}
-      <div className="profile-tabs">
-        <button 
-          className={`profile-tab-btn ${activeTab === 'members' ? 'active' : ''}`}
-          onClick={() => setActiveTab('members')}
-        >
-          Members ({group.members.length})
-        </button>
-        {isAdmin && (
-          <button 
-            className={`profile-tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
-            onClick={() => setActiveTab('requests')}
-          >
-            Requests ({requests.length})
-          </button>
-        )}
-      </div>
-      
-      {/* TAB CONTENT */}
-      {activeTab === 'members' && (
-        <div className="group-details-members">
-          <div className="user-card-grid-condensed">
-            {group.members.map(member => (
-              <div key={member.id} className="user-card-condensed">
-                <img 
-                  src={member.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${member.name[0]}`} 
-                  alt={member.name}
-                  className="user-card-avatar-small"
-                />
-                <div className="user-card-info">
-                  <strong>{member.name}</strong>
-                  <span>{member.email}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {activeTab === 'requests' && isAdmin && (
-        <div className="group-details-members">
-          <JoinRequests 
-            requests={requests}
-            onApprove={handleApprove}
-            onDeny={handleDeny}
+    <>
+      <div className="page-feed-container">
+        <div className="group-details-header">
+          <img 
+            src={group.profileImageUrl || `https://placehold.co/600x200/7E57C2/FFFFFF?text=${group.name[0]}`}
+            alt={group.name}
+            className="group-details-image"
           />
         </div>
-      )}
+
+        <div className="group-details-actions">
+          {/* NEW: Invite Button for members */}
+          {isMember && (
+            <button className="btn-invite" onClick={() => setIsInviteModalOpen(true)}>
+              + Invite
+            </button>
+          )}
+          {renderJoinButton()}
+        </div>
+
+        <div className="group-details-info">
+          <h2>{group.name}</h2>
+          <p>{group.description}</p>
+        </div>
+        
+        <div className="profile-tabs">
+          <button 
+            className={`profile-tab-btn ${activeTab === 'members' ? 'active' : ''}`}
+            onClick={() => setActiveTab('members')}
+          >
+            Members ({group.members.length})
+          </button>
+          {isAdmin && (
+            <button 
+              className={`profile-tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
+              onClick={() => setActiveTab('requests')}
+            >
+              Requests ({requests.length})
+            </button>
+          )}
+        </div>
+        
+        {activeTab === 'members' && (
+          <div className="group-details-members">
+            <div className="user-card-grid-condensed">
+              {group.members.map(member => (
+                <div key={member.id} className="user-card-condensed">
+                  <img 
+                    src={member.profileImageUrl || `https://placehold.co/100x100/E8F5FF/1D9BF0?text=${member.name[0]}`} 
+                    alt={member.name}
+                    className="user-card-avatar-small"
+                  />
+                  <div className="user-card-info">
+                    <strong>{member.name}</strong>
+                    <span>{member.email}</span>
+                  </div>
+                  {/* NEW: Admin Badge */}
+                  {member.id === group.createdByUserID && (
+                    <span className="admin-badge">Admin</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'requests' && isAdmin && (
+          <div className="group-details-members">
+            <JoinRequests 
+              requests={requests}
+              onApprove={handleApprove}
+              onDeny={handleDeny}
+            />
+          </div>
+        )}
+        
+      </div>
       
-    </div>
+      {/* NEW: Render Invite Modal */}
+      {isInviteModalOpen && (
+        <InviteModal 
+          group={group} 
+          onClose={() => setIsInviteModalOpen(false)} 
+        />
+      )}
+    </>
   );
 }
 

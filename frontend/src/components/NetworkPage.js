@@ -3,13 +3,15 @@ import axios from 'axios';
 import { useDebounce } from '../hooks/useDebounce';
 
 // Reusable User Card component
-function UserCard({ user, onFollow }) {
+function UserCard({ user, onFollowToggle }) {
   const [isFollowed, setIsFollowed] = useState(user.isFollowed);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleFollow = async () => {
+  const handleToggle = async () => {
     setIsLoading(true);
-    await onFollow(user.id, isFollowed); // Pass 'isFollowed' to know if we should follow or unfollow
+    // Tell the parent to handle the API call
+    await onFollowToggle(user.id, isFollowed);
+    // Parent will refetch, but we can optimistically update
     setIsFollowed(!isFollowed);
     setIsLoading(false);
   };
@@ -27,8 +29,8 @@ function UserCard({ user, onFollow }) {
         <span className="user-card-role">{user.role}</span>
       </div>
       <button 
-        onClick={handleFollow} 
-        className={`btn-add-friend ${isFollowed ? 'followed' : ''}`}
+        onClick={handleToggle} 
+        className={`btn-follow ${isFollowed ? 'following' : ''}`}
         disabled={isLoading}
       >
         {isLoading ? '...' : (isFollowed ? 'Following' : 'Follow')}
@@ -43,32 +45,33 @@ function NetworkPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms delay
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const token = localStorage.getItem('token');
 
   // Fetch users from API
+  const fetchUsers = async () => {
+    if (!token) {
+      setError('You must be logged in.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await axios.get('http://localhost:8080/users', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { search: debouncedSearchTerm }
+      });
+      setUsers(response.data.users || []);
+    } catch (err) {
+      setError('Could not fetch users list.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   useEffect(() => {
-    const fetchUsers = async () => {
-      if (!token) {
-        setError('You must be logged in.');
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      try {
-        const response = await axios.get('http://localhost:8080/users', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { search: debouncedSearchTerm } // Send debounced search term as query param
-        });
-        setUsers(response.data.users || []);
-      } catch (err) {
-        setError('Could not fetch users list.');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
-  }, [debouncedSearchTerm, token]); // Re-fetch when debounced term or token changes
+  }, [debouncedSearchTerm, token]);
 
   // Follow/Unfollow handler
   const handleFollowToggle = async (userId, isCurrentlyFollowed) => {
@@ -81,16 +84,15 @@ function NetworkPage() {
     try {
       await axios.post(
         endpoint, 
-        {}, // Empty body
+        {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // If this was a "follow", we want to optimistically remove the user from the "Find People" list
+      // After following, refresh the list to remove them
       if (!isCurrentlyFollowed) {
         setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
       }
     } catch (err) {
       console.error('Failed to update follow status', err);
-      // Revert state on error (optional)
     }
   };
 
@@ -115,13 +117,15 @@ function NetworkPage() {
 
       <div className="user-card-grid">
         {!loading && users.length === 0 ? (
-          <p className="loading-message">No users found.</p>
+          <p className="loading-message">
+            {searchTerm ? 'No users found.' : 'No users to follow.'}
+          </p>
         ) : (
           users.map(user => (
             <UserCard 
               key={user.id} 
               user={user} 
-              onFollow={handleFollowToggle} 
+              onFollowToggle={handleFollowToggle} 
             />
           ))
         )}

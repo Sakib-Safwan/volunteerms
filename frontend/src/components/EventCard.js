@@ -32,7 +32,10 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
       if (err.response && err.response.status === 409) {
         setError('Already registered.');
         setIsRegistered(true); // Mark as registered if server says so
-      } else {
+      } else if (err.response && err.response.data.error) {
+        setError(err.response.data.error);
+      }
+      else {
         setError('Registration failed.');
       }
     } finally {
@@ -91,7 +94,7 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
               className="event-card-location"
               onClick={(e) => e.stopPropagation()} // Don't trigger card click
             >
-              <span role="img" aria-label="pin">📍</span> View Map
+              <span role="img" aria-label="pin">📍</span> {event.locationAddress}
             </a>
           )}
         </div>
@@ -100,7 +103,7 @@ function EventCard({ event, showRegisterButton = true, onClick = () => {}, class
       {/* Social Context Bar */}
       {socialText && (
         <div className="event-card-social">
-          {socialText}
+          <span role="img" aria-label="people">👥</span> {socialText}
         </div>
       )}
       

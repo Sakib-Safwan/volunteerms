@@ -11,14 +11,11 @@ function DashboardPage() {
   const userRole = localStorage.getItem('role');
   const token = localStorage.getItem('token');
 
-  // State for the modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
     let endpoint = '';
-
-    // Set the title and API endpoint based on the user's role
     if (userRole === 'Organizer') {
       setTitle('Events You Created');
       endpoint = 'http://localhost:8080/organizer/events';
@@ -47,17 +44,16 @@ function DashboardPage() {
     };
 
     fetchMyEvents();
-  }, [userRole, token]); // Re-run if role or token changes
+  }, [userRole, token]);
 
-  // Handler to open the modal
   const handleCardClick = (event) => {
-    if (userRole !== 'Organizer') return; // Only organizers can click
+    if (userRole !== 'Organizer') return;
     setSelectedEvent(event);
     setIsModalOpen(true);
   };
 
   return (
-    <> {/* Use Fragment */}
+    <>
       <div className="page-feed-container">
         <div className="page-feed-header">
           <h2>{title}</h2>
@@ -79,7 +75,6 @@ function DashboardPage() {
                 key={event.id} 
                 event={event} 
                 showRegisterButton={false} 
-                // Add onClick handler and cursor style
                 onClick={() => handleCardClick(event)} 
                 className={userRole === 'Organizer' ? 'clickable-card' : ''}
               />
@@ -88,7 +83,6 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* Render the modal */}
       {isModalOpen && (
         <RegisteredVolunteersModal 
           event={selectedEvent} 

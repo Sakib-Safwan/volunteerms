@@ -9,8 +9,9 @@ import CreateEventPage from './components/CreateEventPage';
 import ProfilePage from './components/ProfilePage';
 import NetworkPage from './components/NetworkPage';
 import LandingPage from './components/LandingPage';
-import GroupsPage from './components/GroupsPage'; // NEW
-import GroupDetailsPage from './components/GroupDetailsPage'; // NEW
+import GroupsPage from './components/GroupsPage';
+import GroupDetailsPage from './components/GroupDetailsPage';
+import NotificationsPage from './components/NotificationsPage'; // NEW
 import './App.css';
 
 /**
@@ -18,8 +19,6 @@ import './App.css';
  */
 const ProtectedRoute = () => {
   const token = localStorage.getItem('token');
-  // If no token, redirect to the new landing page
-  // We use <Outlet /> to render the nested child routes (e.g., DashboardPage)
   return token ? <MainLayout><Outlet /></MainLayout> : <Navigate to="/" replace />; 
 };
 
@@ -28,7 +27,6 @@ const ProtectedRoute = () => {
  */
 const PublicOnlyRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  // If token exists, redirect to the main app's home page
   return token ? <Navigate to="/home" replace /> : children;
 };
 
@@ -37,7 +35,6 @@ const PublicOnlyRoute = ({ children }) => {
  */
 const OrganizerRoute = ({ children }) => {
   const userRole = localStorage.getItem('role');
-  // If not an organizer, redirect to the main app's home page
   return userRole === 'Organizer' ? children : <Navigate to="/home" replace />;
 };
 
@@ -66,6 +63,9 @@ function App() {
           <Route path="/events" element={<EventFeedPage />} />
           <Route path="/network" element={<NetworkPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/groups" element={<GroupsPage />} />
+          <Route path="/groups/:id" element={<GroupDetailsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} /> {/* NEW */}
           <Route
             path="/create-event"
             element={
@@ -74,9 +74,6 @@ function App() {
               </OrganizerRoute>
             }
           />
-          {/* NEW: Group Routes */}
-          <Route path="/groups" element={<GroupsPage />} />
-          <Route path="/groups/:id" element={<GroupDetailsPage />} />
         </Route>
 
         {/* --- Catch-all 404 --- */}

@@ -21,8 +21,6 @@ function LoginPage() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('role', response.data.role);
       
-      // This is correct: it navigates to /home, which
-      // will be caught by the protected "/*" route.
       navigate('/home'); 
 
     } catch (err) {
@@ -38,7 +36,6 @@ function LoginPage() {
     <div className="form-container">
       <form onSubmit={handleSubmit}>
         <h2>Welcome Back!</h2>
-        {/* ... (rest of the form) ... */}
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input

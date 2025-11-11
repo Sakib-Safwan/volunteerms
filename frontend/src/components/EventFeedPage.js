@@ -16,6 +16,7 @@ function EventFeedPage() {
         return;
       }
       try {
+        setLoading(true);
         // Send token in the request
         const response = await axios.get('http://localhost:8080/events', {
           headers: { Authorization: `Bearer ${token}` }

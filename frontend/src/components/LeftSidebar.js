@@ -29,16 +29,20 @@ function LeftSidebar() {
               <span className="nav-icon" role="img" aria-label="Events">📅</span> Events
             </NavLink>
           </li>
-          {/* Network Link */}
           <li className="nav-item">
             <NavLink to="/network" className="nav-pill">
               <span className="nav-icon" role="img" aria-label="Network">👥</span> Network
             </NavLink>
           </li>
-          {/* NEW: Groups Link */}
           <li className="nav-item">
             <NavLink to="/groups" className="nav-pill">
               <span className="nav-icon" role="img" aria-label="Groups">🏘️</span> Groups
+            </NavLink>
+          </li>
+          {/* NEW: Notifications Link */}
+          <li className="nav-item">
+            <NavLink to="/notifications" className="nav-pill">
+              <span className="nav-icon" role="img" aria-label="Notifications">🔔</span> Notifications
             </NavLink>
           </li>
           <li className="nav-item">
