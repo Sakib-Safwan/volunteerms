@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// This is our new, simple tag input component
+// ... (SkillTagInput component remains the same)
 function SkillTagInput({ skills, setSkills }) {
   const [inputValue, setInputValue] = useState('');
-
   const handleKeyDown = (e) => {
     if (e.key !== 'Enter' || !inputValue.trim()) return;
     e.preventDefault();
-    if (skills.includes(inputValue)) {
-      setInputValue(''); // Clear input if skill already exists
-      return;
-    }
+    if (skills.includes(inputValue)) { setInputValue(''); return; }
     setSkills([...skills, inputValue.trim()]);
     setInputValue('');
   };
-
   const removeSkill = (skillToRemove) => {
     setSkills(skills.filter(skill => skill !== skillToRemove));
   };
@@ -31,8 +26,7 @@ function SkillTagInput({ skills, setSkills }) {
         ))}
       </div>
       <input
-        type="text"
-        value={inputValue}
+        type="text" value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Type a skill and press Enter..."
@@ -44,7 +38,9 @@ function SkillTagInput({ skills, setSkills }) {
 // The main profile page component
 function ProfilePage() {
   const [skills, setSkills] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [friends, setFriends] = useState([]); // NEW
+  const [loadingSkills, setLoadingSkills] = useState(true);
+  const [loadingFriends, setLoadingFriends] = useState(true); // NEW
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const userRole = localStorage.getItem('role');
@@ -61,27 +57,40 @@ function ProfilePage() {
       } catch (err) {
         setError('Could not fetch skills.');
       } finally {
-        setLoading(false);
+        setLoadingSkills(false);
       }
     };
     fetchSkills();
   }, [token]);
 
-  // 2. Save skills
+  // 2. NEW: Fetch friends on load
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/friends', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setFriends(response.data.friends || []);
+      } catch (err) {
+        setError(prev => prev + ' Could not fetch friends.');
+      } finally {
+        setLoadingFriends(false);
+      }
+    };
+    fetchFriends();
+  }, [token]);
+
+
+  // 3. Save skills
   const handleSaveSkills = async () => {
-    setError('');
-    setStatus('Saving...');
+    // ... (same as before)
+    setError(''); setStatus('Saving...');
     try {
-      await axios.post(
-        'http://localhost:8080/profile/skills',
-        { skills: skills }, // Send the skills array
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post('http://localhost:8080/profile/skills', { skills: skills }, { headers: { Authorization: `Bearer ${token}` } });
       setStatus('Skills updated successfully!');
-      setTimeout(() => setStatus(''), 3000); // Clear status after 3s
+      setTimeout(() => setStatus(''), 3000);
     } catch (err) {
-      setError('Could not update skills.');
-      setStatus('');
+      setError('Could not update skills.'); setStatus('');
     }
   };
 
@@ -101,7 +110,7 @@ function ProfilePage() {
         {userRole === 'Volunteer' && (
           <div className="form-group">
             <label>Your Skills</label>
-            {loading ? <p>Loading skills...</p> : (
+            {loadingSkills ? <p>Loading skills...</p> : (
               <SkillTagInput skills={skills} setSkills={setSkills} />
             )}
           </div>
@@ -114,6 +123,25 @@ function ProfilePage() {
           <button onClick={handleSaveSkills} className="btn btn-primary" style={{ width: 'auto' }}>
             Save Skills
           </button>
+        )}
+      </div>
+
+      {/* NEW: Friends List Section */}
+      <div className="form-container-in-feed" style={{marginTop: '20px'}}>
+        <h3>Your Friends</h3>
+        {loadingFriends ? <p>Loading friends...</p> : (
+          <div className="user-list-container">
+            {friends.length === 0 ? <p>You haven't added any friends yet.</p> : (
+              friends.map(friend => (
+                <div key={friend.ID} className="user-list-item">
+                  <div className="user-list-info">
+                    <strong>{friend.Email}</strong>
+                    <span>{friend.Role}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
     </div>

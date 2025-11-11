@@ -11,7 +11,6 @@ function LeftSidebar() {
     navigate('/login');
   };
 
-  // NavLink adds an "active" class to the link that matches the current URL
   return (
     <nav className="left-sidebar">
       <div className="sidebar-sticky-content">
@@ -28,6 +27,12 @@ function LeftSidebar() {
           <li className="nav-item">
             <NavLink to="/events" className="nav-pill">
               <span className="nav-icon">📅</span> Events
+            </NavLink>
+          </li>
+          {/* NEW: Network Link */}
+          <li className="nav-item">
+            <NavLink to="/network" className="nav-pill">
+              <span className="nav-icon">👥</span> Network
             </NavLink>
           </li>
           <li className="nav-item">
