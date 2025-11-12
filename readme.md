@@ -4,7 +4,7 @@ A modern, social platform designed to connect volunteers with organizers. This w
 
 This project is built as part of the Industrial Attachment Program with Synesis IT.
 
-Key Features
+✨ Key Features
 
 Social Network: Users can follow other volunteers and organizers, creating a social feed of activity.
 
@@ -36,7 +36,7 @@ They can click on an event to see a list of all registered volunteers and their 
 
 Volunteer Dashboards: Volunteers have a dashboard to see all events they are registered for.
 
-Tech Stack
+🛠️ Tech Stack
 
 Backend: Go (Golang)
 
@@ -58,7 +58,7 @@ Styling: Plain CSS with a Twitter-like 2-column layout
 
 Database Seeding: A standalone Python script (seeder.py) using Faker to generate realistic sample data.
 
-How to Run Locally:
+🚀 How to Run Locally
 
 To get the project running on your local machine, you'll need to run both the backend and frontend servers.
 
@@ -76,26 +76,26 @@ pip install faker bcrypt
 
 The backend server runs on http://localhost:8080.
 
-# 1. Navigate to the backend folder
+1. Navigate to the backend folder
 cd backend
 
-# 2. Build the server executable
-# This creates a 'backend.exe' (Windows) or 'backend' (Mac/Linux)
+2. Build the server executable
+This creates a 'backend.exe' (Windows) or 'backend' (Mac/Linux)
 go build
 
-# 3. Run the executable to start the server
-# This will also create your vms.db file for the first time
+3. Run the executable to start the server
+This will also create your vms.db file for the first time
 ./backend.exe
-# (or ./backend on Mac/Linux)
+(or ./backend on Mac/Linux)
 
-# 4. Stop the server (Ctrl+C)
+4. Stop the server (Ctrl+C)
 
-# 5. Run the Python seeder to fill the database
-# (Run this from the *root* project folder, not the backend folder)
+5. Run the Python seeder to fill the database
+(Run this from the *root* project folder, not the backend folder)
 cd ..
 py seeder.py
 
-# 6. Re-start the backend server
+6. Re-start the backend server
 cd backend
 ./backend.exe
 
@@ -106,14 +106,14 @@ Your backend is now running and seeded with data.
 
 The frontend server runs on http://localhost:3000.
 
-# 1. Open a *new* terminal
-# 2. Navigate to the frontend folder
+1. Open a *new* terminal
+2. Navigate to the frontend folder
 cd frontend
 
-# 3. Install all dependencies
+3. Install all dependencies
 npm install
 
-# 4. Start the development server
+4. Start the development server
 npm start
 
 
